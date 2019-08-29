@@ -30,10 +30,15 @@ import org.apache.olingo.odata2.api.ep.feed.ODataFeed;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.HttpURLConnection;
+import java.net.MalformedURLException;
+import java.net.URI;
+import java.net.URISyntaxException;
 import java.net.URL;
+import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.util.Base64;
 import java.util.List;
+import javax.annotation.Nullable;
 import javax.ws.rs.HttpMethod;
 import javax.ws.rs.core.HttpHeaders;
 import javax.ws.rs.core.MediaType;
@@ -45,6 +50,7 @@ public class OData2Client {
 
   private static final String METADATA = "$metadata";
   private static final String SEPARATOR = "/";
+  private static final String QUERY_SEPARATOR = "?";
 
   private String rootUrl;
   private String username;
@@ -63,18 +69,20 @@ public class OData2Client {
   }
 
   /**
-   * Get {@link ODataFeed} for the specified entity set name.
+   * Query {@link ODataFeed} using the specified entity set name and OData query.
    *
    * @param entitySetName entity set name.
+   * @param query         query such as "$top=2&$select=BuyerName&$filter=BuyerName eq 'TECUM'".
    * @return {@link ODataFeed} for the specified entity set name.
    * @throws ODataException if the specified entity set cannot be read.
    */
-  public ODataFeed readEntitySet(String entitySetName) {
+  public ODataFeed queryEntitySet(String entitySetName, @Nullable String query) {
     Edm metadata = getMetadata();
 
     try {
       EdmEntitySet entitySet = metadata.getDefaultEntityContainer().getEntitySet(entitySetName);
-      String entitySetUrl = rootUrl + SEPARATOR + entitySetName;
+      String entitySetUrl = Strings.isNullOrEmpty(query) ?
+        rootUrl + SEPARATOR + entitySetName : rootUrl + SEPARATOR + entitySetName + QUERY_SEPARATOR + query;
       HttpURLConnection connection = connect(entitySetUrl, username, password);
       InputStream content = (InputStream) connection.getContent();
 
@@ -84,8 +92,6 @@ public class OData2Client {
       throw new ODataException(String.format("Unable to read '%s' entity set.", entitySetName), e);
     }
   }
-
-  // TODO query
 
   /**
    * Get OData service metadata.
@@ -128,8 +134,9 @@ public class OData2Client {
   }
 
   private HttpURLConnection connect(String url, String username, String password) {
+    String encodedUrl = urlEncode(url);
     try {
-      HttpURLConnection connection = (HttpURLConnection) new URL(url).openConnection();
+      HttpURLConnection connection = (HttpURLConnection) new URL(encodedUrl).openConnection();
       connection.setRequestMethod(HttpMethod.GET);
       connection.setRequestProperty(HttpHeaders.ACCEPT, MediaType.APPLICATION_XML);
       if (!Strings.isNullOrEmpty(username) || !Strings.isNullOrEmpty(password)) {
@@ -140,7 +147,24 @@ public class OData2Client {
       connection.connect();
       return connection;
     } catch (IOException e) {
-      throw new ODataException(String.format("Unable to connect to '%s'.", url), e);
+      throw new ODataException(String.format("Unable to connect to '%s': %s", e.getMessage(), encodedUrl), e);
+    }
+  }
+
+  /**
+   * Encode the specified string representation of URL.
+   * For example, query "$top=2&$skip=2&$select=BuyerName&$filter=BuyerName eq 'TECUM'" will be encoded as to
+   * "$top=2&$skip=2&$select=BuyerName&$filter=BuyerName%20eq%20%27TECUM%27".
+   * Using {@link URLEncoder#encode} is not appropriate since it will encode allowed characters, such as '$' too.
+   */
+  private String urlEncode(String original) {
+    try {
+      URL url = new URL(original);
+      URI uri = new URI(url.getProtocol(), url.getUserInfo(), url.getHost(), url.getPort(), url.getPath(),
+                        url.getQuery(), url.getRef());
+      return uri.toASCIIString();
+    } catch (URISyntaxException | MalformedURLException e) {
+      throw new ODataException(String.format("Unable to encode URL: '%s'", original), e);
     }
   }
 }

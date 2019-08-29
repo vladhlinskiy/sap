@@ -66,7 +66,7 @@ public class SapODataSource extends BatchSource<NullWritable, ODataEntry, Struct
       new OData2Client(config.getUrl(), config.getUser(), config.getPassword())
         .getEntitySetType(config.getResourcePath());
     } catch (ODataException e) {
-      throw new InvalidConfigPropertyException("Unable to connect to OData Service.", e,
+      throw new InvalidConfigPropertyException("Unable to connect to OData Service: " + e.getMessage(), e,
                                                SapODataConstants.ODATA_SERVICE_URL);
     }
 
@@ -93,7 +93,7 @@ public class SapODataSource extends BatchSource<NullWritable, ODataEntry, Struct
       new OData2Client(config.getUrl(), config.getUser(), config.getPassword())
         .getEntitySetType(config.getResourcePath());
     } catch (ODataException e) {
-      throw new InvalidConfigPropertyException("Unable to connect to OData Service.", e,
+      throw new InvalidConfigPropertyException("Unable to connect to OData Service: " + e.getMessage(), e,
                                                SapODataConstants.ODATA_SERVICE_URL);
     }
 
@@ -126,8 +126,12 @@ public class SapODataSource extends BatchSource<NullWritable, ODataEntry, Struct
     OData2Client oData2Client = new OData2Client(config.getUrl(), config.getUser(), config.getPassword());
     try {
       EdmEntityType edmEntityType = oData2Client.getEntitySetType(config.getResourcePath());
+      List<String> selectProperties = config.getSelectProperties();
       List<Schema.Field> fields = new ArrayList<>();
       for (String propertyName : edmEntityType.getPropertyNames()) {
+        if (!selectProperties.isEmpty() && !selectProperties.contains(propertyName)) {
+          continue;
+        }
         EdmTyped property = edmEntityType.getProperty(propertyName);
         fields.add(getSchemaField(property));
       }

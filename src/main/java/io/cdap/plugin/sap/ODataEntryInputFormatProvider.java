@@ -27,7 +27,7 @@ import java.util.Map;
  * InputFormatProvider used by cdap to provide configurations to mapreduce job
  */
 public class ODataEntryInputFormatProvider implements InputFormatProvider {
-  public static final String PROPERTY_CONFIG_JSON = "cdap.sap.ecc.config";
+  public static final String PROPERTY_CONFIG_JSON = "cdap.sap.odata.config";
   private static final Gson gson = new GsonBuilder().create();
 
   private final Map<String, String> conf;

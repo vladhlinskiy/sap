@@ -2,6 +2,7 @@
   "metadata": {
     "spec-version": "1.5"
   },
+  "display-name": "SAP OData",
   "configuration-groups": [
     {
       "label": "General",
@@ -27,6 +28,14 @@
             "omit-properties": [
               {
                 "name": "schema"
+              }
+            ],
+            "add-properties": [
+              {
+                "name": "query",
+                "plugin-property-for-value": "query",
+                "widget-type": "textbox",
+                "label": "Query"
               }
             ]
           }

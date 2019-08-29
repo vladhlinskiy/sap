@@ -28,6 +28,8 @@ import io.cdap.plugin.common.Constants;
 import io.cdap.plugin.common.IdUtils;
 
 import java.io.IOException;
+import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -111,6 +113,27 @@ public class SapODataConfig extends PluginConfig {
   @Nullable
   public String getQuery() {
     return query;
+  }
+
+  /**
+   * An OData query can contain '$select' option. The $select option specifies a subset of properties to include in the
+   * response body. For example, to get only the name and price of each product, the following query can be used:
+   * 'http://localhost/odata/Products?$select=Price,Name'.
+   *
+   * @return empty list if no '$select' query option specified. List of the property names to include, otherwise(order
+   * is preserved).
+   */
+  public List<String> getSelectProperties() {
+    if (Strings.isNullOrEmpty(query) || !query.contains("$select")) {
+      return Collections.emptyList();
+    }
+    // There is no straightforward way to parse $select query options using Olingo V2
+    String selectOption = "$select=";
+    int start = query.indexOf(selectOption) + selectOption.length();
+    int end = query.indexOf("&", start);
+    String commaSeparatedPropertyNames = end != -1 ? query.substring(start, end) : query.substring(start);
+
+    return Arrays.asList(commaSeparatedPropertyNames.split(","));
   }
 
   @Nullable

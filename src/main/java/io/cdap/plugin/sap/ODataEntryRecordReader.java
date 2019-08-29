@@ -51,7 +51,7 @@ public class ODataEntryRecordReader extends RecordReader<NullWritable, ODataEntr
     SapODataConfig config = gson.fromJson(configJson, SapODataConfig.class);
 
     OData2Client oData2Client = new OData2Client(config.getUrl(), config.getUser(), config.getPassword());
-    ODataFeed feed = oData2Client.readEntitySet(config.getResourcePath());
+    ODataFeed feed = oData2Client.queryEntitySet(config.getResourcePath(), config.getQuery());
     iterator = feed.getEntries().iterator();
   }
 

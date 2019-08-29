@@ -20,6 +20,7 @@ import com.github.tomakehurst.wiremock.junit.WireMockRule;
 import com.google.common.collect.ImmutableMap;
 import io.cdap.cdap.api.artifact.ArtifactSummary;
 import io.cdap.cdap.api.data.format.StructuredRecord;
+import io.cdap.cdap.api.data.schema.Schema;
 import io.cdap.cdap.api.dataset.table.Table;
 import io.cdap.cdap.datapipeline.DataPipelineApp;
 import io.cdap.cdap.datapipeline.SmartWorkflow;
@@ -54,6 +55,7 @@ import java.nio.file.Paths;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
+import javax.annotation.Nullable;
 import javax.ws.rs.core.HttpHeaders;
 import javax.ws.rs.core.MediaType;
 
@@ -85,11 +87,40 @@ public class SapODataSourceETLTest extends HydratorTestBase {
 
   @Test
   public void testSource() throws Exception {
-    Map<String, String> properties = new ImmutableMap.Builder<String, String>()
+    testSource(null);
+  }
+
+  @Test
+  public void testSourceWithSchemaSet() throws Exception {
+    Schema schema = Schema.recordOf("schema",
+                                    Schema.Field.of("Id", Schema.of(Schema.Type.STRING)),
+                                    Schema.Field.of("Binary", Schema.of(Schema.Type.BYTES)),
+                                    Schema.Field.of("Boolean", Schema.of(Schema.Type.BOOLEAN)),
+                                    Schema.Field.of("Byte", Schema.of(Schema.Type.INT)),
+                                    Schema.Field.of("Decimal", Schema.decimalOf(16, 3)),
+                                    Schema.Field.of("Double", Schema.of(Schema.Type.DOUBLE)),
+                                    Schema.Field.of("Single", Schema.of(Schema.Type.FLOAT)),
+                                    Schema.Field.of("Guid", Schema.of(Schema.Type.STRING)),
+                                    Schema.Field.of("Int16", Schema.of(Schema.Type.INT)),
+                                    Schema.Field.of("Int32", Schema.of(Schema.Type.INT)),
+                                    Schema.Field.of("Int64", Schema.of(Schema.Type.LONG)),
+                                    Schema.Field.of("SByte", Schema.of(Schema.Type.INT)),
+                                    Schema.Field.of("String", Schema.of(Schema.Type.STRING)),
+                                    Schema.Field.of("DateTime", Schema.of(Schema.LogicalType.TIMESTAMP_MICROS)),
+                                    Schema.Field.of("Time", Schema.of(Schema.LogicalType.TIME_MICROS)),
+                                    Schema.Field.of("DateTimeOffset", Schema.of(Schema.Type.STRING)));
+
+    testSource(schema);
+  }
+
+  public void testSource(@Nullable Schema schema) throws Exception {
+    ImmutableMap.Builder<String, String> properties = new ImmutableMap.Builder<String, String>()
       // http://vhcalnplci.dummy.nodomain:8000/sap/opu/odata/SAP/ZGW100_XX_S2_SRV/
       .put(SapODataConstants.ODATA_SERVICE_URL, getServerAddress() + "/sap/opu/odata/SAP/ZGW100_XX_S2_SRV")
-      .put(SapODataConstants.RESOURCE_PATH, "AllDataTypes")
-      .build();
+      .put(SapODataConstants.RESOURCE_PATH, "AllDataTypes");
+    if (schema != null) {
+      properties.put(SapODataConstants.SCHEMA, schema.toString());
+    }
 
     wireMockRule.stubFor(WireMock.get(WireMock.urlEqualTo("/sap/opu/odata/SAP/ZGW100_XX_S2_SRV/$metadata"))
                            .willReturn(WireMock.aResponse().withBody(readResourceFile("metadata.xml"))));
@@ -99,7 +130,7 @@ public class SapODataSourceETLTest extends HydratorTestBase {
                       .withHeader(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_XML)
                       .withBody(readResourceFile("AllDataTypes.xml"))));
 
-    List<StructuredRecord> records = getPipelineResults(properties);
+    List<StructuredRecord> records = getPipelineResults(properties.build());
     Assert.assertEquals(3, records.size());
   }
 
@@ -128,9 +159,7 @@ public class SapODataSourceETLTest extends HydratorTestBase {
     workflowManager.startAndWaitForRun(ProgramRunStatus.COMPLETED, 5, TimeUnit.MINUTES);
 
     DataSetManager<Table> outputManager = getDataset(outputDatasetName);
-    List<StructuredRecord> outputRecords = MockSink.readOutput(outputManager);
-
-    return outputRecords;
+    return MockSink.readOutput(outputManager);
   }
 
   protected String readResourceFile(String filename) throws URISyntaxException, IOException {

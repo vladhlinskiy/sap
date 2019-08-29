@@ -22,6 +22,10 @@ import io.cdap.plugin.common.Constants;
 import org.junit.Assert;
 import org.junit.Test;
 
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.List;
+
 /**
  * Tests of {@link SapODataConfig} methods.
  */
@@ -151,5 +155,55 @@ public class SapODataConfigTest {
     } catch (InvalidConfigPropertyException e) {
       Assert.assertEquals(SapODataConstants.RESOURCE_PATH, e.getProperty());
     }
+  }
+
+  @Test
+  public void testSelectProperties() {
+    List<String> selectProperties = SapODataConfigBuilder.builder(VALID_CONFIG)
+      .setQuery("$select=BuyerName")
+      .build()
+      .getSelectProperties();
+
+    Assert.assertEquals(Collections.singletonList("BuyerName"), selectProperties);
+  }
+
+  @Test
+  public void testSelectPropertiesMultiple() {
+    List<String> selectProperties = SapODataConfigBuilder.builder(VALID_CONFIG)
+      .setQuery("$select=Buyer Name,First Name")
+      .build()
+      .getSelectProperties();
+
+    Assert.assertEquals(Arrays.asList("Buyer Name", "First Name"), selectProperties);
+  }
+
+  @Test
+  public void testSelectPropertiesAtStart() {
+    List<String> selectProperties = SapODataConfigBuilder.builder(VALID_CONFIG)
+      .setQuery("$select=BuyerName&$filter=BuyerName eq %27TECUM%27")
+      .build()
+      .getSelectProperties();
+
+    Assert.assertEquals(Collections.singletonList("BuyerName"), selectProperties);
+  }
+
+  @Test
+  public void testSelectPropertiesAtEnd() {
+    List<String> selectProperties = SapODataConfigBuilder.builder(VALID_CONFIG)
+      .setQuery("$top=2&$skip=2&$select=BuyerName")
+      .build()
+      .getSelectProperties();
+
+    Assert.assertEquals(Collections.singletonList("BuyerName"), selectProperties);
+  }
+
+  @Test
+  public void testSelectPropertiesAtMiddle() {
+    List<String> selectProperties = SapODataConfigBuilder.builder(VALID_CONFIG)
+      .setQuery("$top=2&$skip=2&$select=BuyerName&$filter=BuyerName eq %27TECUM%27")
+      .build()
+      .getSelectProperties();
+
+    Assert.assertEquals(Collections.singletonList("BuyerName"), selectProperties);
   }
 }
