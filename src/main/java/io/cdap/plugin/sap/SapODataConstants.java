@@ -28,7 +28,7 @@ public class SapODataConstants {
   /**
    * SAP plugin name.
    */
-  public static final String PLUGIN_NAME = "SapOData";
+  public static final String PLUGIN_NAME = "SapEcc";
 
   /**
    * Configuration property name used to specify URL of the SAP OData service.

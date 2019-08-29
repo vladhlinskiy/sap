@@ -55,6 +55,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 import javax.ws.rs.core.HttpHeaders;
+import javax.ws.rs.core.MediaType;
 
 public class SapODataSourceETLTest extends HydratorTestBase {
 
@@ -87,19 +88,19 @@ public class SapODataSourceETLTest extends HydratorTestBase {
     Map<String, String> properties = new ImmutableMap.Builder<String, String>()
       // http://vhcalnplci.dummy.nodomain:8000/sap/opu/odata/SAP/ZGW100_XX_S2_SRV/
       .put(SapODataConstants.ODATA_SERVICE_URL, getServerAddress() + "/sap/opu/odata/SAP/ZGW100_XX_S2_SRV")
-      .put(SapODataConstants.RESOURCE_PATH, "SalesOrderCollection")
+      .put(SapODataConstants.RESOURCE_PATH, "AllDataTypes")
       .build();
 
     wireMockRule.stubFor(WireMock.get(WireMock.urlEqualTo("/sap/opu/odata/SAP/ZGW100_XX_S2_SRV/$metadata"))
                            .willReturn(WireMock.aResponse().withBody(readResourceFile("metadata.xml"))));
     wireMockRule.stubFor(
-      WireMock.get(WireMock.urlEqualTo("/sap/opu/odata/SAP/ZGW100_XX_S2_SRV/SalesOrderCollection"))
+      WireMock.get(WireMock.urlEqualTo("/sap/opu/odata/SAP/ZGW100_XX_S2_SRV/AllDataTypes"))
         .willReturn(WireMock.aResponse()
-                      .withHeader(HttpHeaders.CONTENT_TYPE, "application/atom+xml")
-                      .withBody(readResourceFile("SalesOrderCollection.xml"))));
+                      .withHeader(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_XML)
+                      .withBody(readResourceFile("AllDataTypes.xml"))));
 
     List<StructuredRecord> records = getPipelineResults(properties);
-    Assert.assertEquals(701, records.size());
+    Assert.assertEquals(3, records.size());
   }
 
   public List<StructuredRecord> getPipelineResults(Map<String, String> sourceProperties) throws Exception {

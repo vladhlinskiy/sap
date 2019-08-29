@@ -38,21 +38,13 @@ import org.apache.olingo.odata2.core.edm.EdmTime;
 import org.apache.olingo.odata2.core.ep.entry.ODataEntryImpl;
 
 import java.math.BigDecimal;
-import java.math.BigInteger;
-import java.sql.Time;
-import java.sql.Timestamp;
 import java.util.Calendar;
-import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
 
 /**
  * Provides handy methods to construct a {@link ODataEntry} instance for testing.
- * Some of the EDM types can be represented by multiple Java types. For more information see:
- * <a href="https://olingo.apache.org/javadoc/odata2/org/apache/olingo/odata2/api/edm/EdmSimpleType.html">
- * EdmSimpleType
- * </a>
  */
 public final class ODataEntryBuilder {
 
@@ -81,31 +73,7 @@ public final class ODataEntryBuilder {
     return set(name, value, EdmInt16.getInstance());
   }
 
-  public ODataEntryBuilder setInt16(String name, byte value) {
-    return set(name, value, EdmInt16.getInstance());
-  }
-
-  public ODataEntryBuilder setInt16(String name, int value) {
-    return set(name, value, EdmInt16.getInstance());
-  }
-
-  public ODataEntryBuilder setInt16(String name, long value) {
-    return set(name, value, EdmInt16.getInstance());
-  }
-
   public ODataEntryBuilder setInt32(String name, int value) {
-    return set(name, value, EdmInt32.getInstance());
-  }
-
-  public ODataEntryBuilder setInt32(String name, byte value) {
-    return set(name, value, EdmInt32.getInstance());
-  }
-
-  public ODataEntryBuilder setInt32(String name, short value) {
-    return set(name, value, EdmInt32.getInstance());
-  }
-
-  public ODataEntryBuilder setInt32(String name, long value) {
     return set(name, value, EdmInt32.getInstance());
   }
 
@@ -113,27 +81,7 @@ public final class ODataEntryBuilder {
     return set(name, value, EdmInt64.getInstance());
   }
 
-  public ODataEntryBuilder setInt64(String name, byte value) {
-    return set(name, value, EdmInt64.getInstance());
-  }
-
-  public ODataEntryBuilder setInt64(String name, short value) {
-    return set(name, value, EdmInt64.getInstance());
-  }
-
-  public ODataEntryBuilder setInt64(String name, int value) {
-    return set(name, value, EdmInt64.getInstance());
-  }
-
-  public ODataEntryBuilder setInt64(String name, BigInteger value) {
-    return set(name, value, EdmInt64.getInstance());
-  }
-
   public ODataEntryBuilder setBinary(String name, byte[] value) {
-    return set(name, value, EdmBinary.getInstance());
-  }
-
-  public ODataEntryBuilder setBinary(String name, Byte[] value) {
     return set(name, value, EdmBinary.getInstance());
   }
 
@@ -141,19 +89,7 @@ public final class ODataEntryBuilder {
     return set(name, value, EdmBoolean.getInstance());
   }
 
-  public ODataEntryBuilder setByte(String name, byte value) {
-    return set(name, value, EdmByte.getInstance());
-  }
-
   public ODataEntryBuilder setByte(String name, short value) {
-    return set(name, value, EdmByte.getInstance());
-  }
-
-  public ODataEntryBuilder setByte(String name, int value) {
-    return set(name, value, EdmByte.getInstance());
-  }
-
-  public ODataEntryBuilder setByte(String name, long value) {
     return set(name, value, EdmByte.getInstance());
   }
 
@@ -161,47 +97,7 @@ public final class ODataEntryBuilder {
     return set(name, value, EdmDateTime.getInstance());
   }
 
-  public ODataEntryBuilder setDateTime(String name, Date value) {
-    return set(name, value, EdmDateTime.getInstance());
-  }
-
-  public ODataEntryBuilder setDateTime(String name, Timestamp value) {
-    return set(name, value, EdmDateTime.getInstance());
-  }
-
-  public ODataEntryBuilder setDateTime(String name, long value) {
-    return set(name, value, EdmDateTime.getInstance());
-  }
-
   public ODataEntryBuilder setDecimal(String name, BigDecimal value) {
-    return set(name, value, EdmDecimal.getInstance());
-  }
-
-  public ODataEntryBuilder setDecimal(String name, BigInteger value) {
-    return set(name, value, EdmDecimal.getInstance());
-  }
-
-  public ODataEntryBuilder setDecimal(String name, double value) {
-    return set(name, value, EdmDecimal.getInstance());
-  }
-
-  public ODataEntryBuilder setDecimal(String name, float value) {
-    return set(name, value, EdmDecimal.getInstance());
-  }
-
-  public ODataEntryBuilder setDecimal(String name, byte value) {
-    return set(name, value, EdmDecimal.getInstance());
-  }
-
-  public ODataEntryBuilder setDecimal(String name, short value) {
-    return set(name, value, EdmDecimal.getInstance());
-  }
-
-  public ODataEntryBuilder setDecimal(String name, int value) {
-    return set(name, value, EdmDecimal.getInstance());
-  }
-
-  public ODataEntryBuilder setDecimal(String name, long value) {
     return set(name, value, EdmDecimal.getInstance());
   }
 
@@ -209,55 +105,7 @@ public final class ODataEntryBuilder {
     return set(name, value, EdmDouble.getInstance());
   }
 
-  public ODataEntryBuilder setDouble(String name, float value) {
-    return set(name, value, EdmDouble.getInstance());
-  }
-
-  public ODataEntryBuilder setDouble(String name, BigDecimal value) {
-    return set(name, value, EdmDouble.getInstance());
-  }
-
-  public ODataEntryBuilder setDouble(String name, byte value) {
-    return set(name, value, EdmDouble.getInstance());
-  }
-
-  public ODataEntryBuilder setDouble(String name, short value) {
-    return set(name, value, EdmDouble.getInstance());
-  }
-
-  public ODataEntryBuilder setDouble(String name, int value) {
-    return set(name, value, EdmDouble.getInstance());
-  }
-
-  public ODataEntryBuilder setDouble(String name, long value) {
-    return set(name, value, EdmDouble.getInstance());
-  }
-
   public ODataEntryBuilder setSingle(String name, float value) {
-    return set(name, value, EdmSingle.getInstance());
-  }
-
-  public ODataEntryBuilder setSingle(String name, double value) {
-    return set(name, value, EdmSingle.getInstance());
-  }
-
-  public ODataEntryBuilder setSingle(String name, BigDecimal value) {
-    return set(name, value, EdmSingle.getInstance());
-  }
-
-  public ODataEntryBuilder setSingle(String name, byte value) {
-    return set(name, value, EdmSingle.getInstance());
-  }
-
-  public ODataEntryBuilder setSingle(String name, short value) {
-    return set(name, value, EdmSingle.getInstance());
-  }
-
-  public ODataEntryBuilder setSingle(String name, int value) {
-    return set(name, value, EdmSingle.getInstance());
-  }
-
-  public ODataEntryBuilder setSingle(String name, long value) {
     return set(name, value, EdmSingle.getInstance());
   }
 
@@ -269,18 +117,6 @@ public final class ODataEntryBuilder {
     return set(name, value, EdmSByte.getInstance());
   }
 
-  public ODataEntryBuilder setSByte(String name, short value) {
-    return set(name, value, EdmSByte.getInstance());
-  }
-
-  public ODataEntryBuilder setSByte(String name, int value) {
-    return set(name, value, EdmSByte.getInstance());
-  }
-
-  public ODataEntryBuilder setSByte(String name, long value) {
-    return set(name, value, EdmSByte.getInstance());
-  }
-
   public ODataEntryBuilder setString(String name, String value) {
     return set(name, value, EdmString.getInstance());
   }
@@ -289,36 +125,14 @@ public final class ODataEntryBuilder {
     return set(name, value, EdmTime.getInstance());
   }
 
-  public ODataEntryBuilder setTime(String name, Date value) {
-    return set(name, value, EdmTime.getInstance());
-  }
-
-  public ODataEntryBuilder setTime(String name, Timestamp value) {
-    return set(name, value, EdmTime.getInstance());
-  }
-
-  public ODataEntryBuilder setTime(String name, Time value) {
-    return set(name, value, EdmTime.getInstance());
-  }
-
-  public ODataEntryBuilder setTime(String name, long value) {
-    return set(name, value, EdmTime.getInstance());
-  }
-
   public ODataEntryBuilder setDateTimeOffset(String name, Calendar value) {
     return set(name, value, EdmDateTimeOffset.getInstance());
   }
 
-  public ODataEntryBuilder setDateTimeOffset(String name, Timestamp value) {
-    return set(name, value, EdmDateTimeOffset.getInstance());
-  }
-
-  public ODataEntryBuilder setDateTimeOffset(String name, Date value) {
-    return set(name, value, EdmDateTimeOffset.getInstance());
-  }
-
-  public ODataEntryBuilder setDateTimeOffset(String name, long value) {
-    return set(name, value, EdmDateTimeOffset.getInstance());
+  public ODataEntryBuilder setDateTimeOffset(String name, String value) throws EdmSimpleTypeException {
+    EdmDateTimeOffset edmDateTimeOffset = EdmDateTimeOffset.getInstance();
+    Calendar calendar = edmDateTimeOffset.valueOfString(value, EdmLiteralKind.DEFAULT, null, Calendar.class);
+    return set(name, calendar, edmDateTimeOffset);
   }
 
   public ODataEntry build() {

@@ -602,6 +602,7 @@
           <instructions>
             <_exportcontents>
               com.fasterxml.*;
+              com.ctc.wstx.*;
               org.apache.olingo.*;
               io.cdap.plugin.*
             </_exportcontents>

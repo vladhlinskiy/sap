@@ -85,7 +85,7 @@ public class OData2Client {
     }
   }
 
-  // TODO queryEntitySet(String entitySetName, String query)
+  // TODO query
 
   /**
    * Get OData service metadata.

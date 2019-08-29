@@ -157,7 +157,8 @@ public class SapODataSource extends BatchSource<NullWritable, ODataEntry, Struct
       case "DateTime":
         return Schema.of(Schema.LogicalType.TIMESTAMP_MICROS);
       case "DateTimeOffset":
-        return Schema.of(Schema.LogicalType.TIMESTAMP_MICROS);
+        // Mapped to 'string' to avoid timezone information loss
+        return Schema.of(Schema.Type.STRING);
       case "Time":
         return Schema.of(Schema.LogicalType.TIME_MICROS);
       case "Decimal":

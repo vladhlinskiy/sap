@@ -19,18 +19,15 @@ package io.cdap.plugin.sap;
 import io.cdap.cdap.api.data.format.StructuredRecord;
 import io.cdap.cdap.api.data.format.UnexpectedFormatException;
 import io.cdap.cdap.api.data.schema.Schema;
-import org.apache.commons.lang.ArrayUtils;
+import org.apache.olingo.odata2.api.edm.EdmLiteralKind;
+import org.apache.olingo.odata2.api.edm.EdmSimpleTypeException;
 import org.apache.olingo.odata2.api.ep.entry.ODataEntry;
+import org.apache.olingo.odata2.core.edm.EdmDateTimeOffset;
 
 import java.math.BigDecimal;
-import java.math.BigInteger;
-import java.sql.Time;
-import java.sql.Timestamp;
 import java.time.Instant;
-import java.time.LocalDateTime;
-import java.time.ZoneOffset;
 import java.util.Calendar;
-import java.util.Date;
+import java.util.GregorianCalendar;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
@@ -81,19 +78,24 @@ public class ODataEntryToRecordTransformer {
     if (fieldLogicalType != null) {
       switch (fieldLogicalType) {
         case TIMESTAMP_MILLIS:
-          // Edm.DateTimeOffset, Edm.DateTime
-          return extractTimestampMillis(fieldName, value);
+          // Edm.DateTime
+          ensureTypeValid(fieldName, value, GregorianCalendar.class);
+          return extractTimestampMillis((GregorianCalendar) value);
         case TIMESTAMP_MICROS:
-          // Edm.DateTimeOffset, Edm.DateTime
-          return extractTimestampMicros(fieldName, value);
+          // Edm.DateTime
+          ensureTypeValid(fieldName, value, GregorianCalendar.class);
+          return extractTimestampMicros((GregorianCalendar) value);
         case TIME_MILLIS:
           // Edm.Time
-          return extractTimeMillis(fieldName, value);
+          ensureTypeValid(fieldName, value, GregorianCalendar.class);
+          return extractTimeMillis((GregorianCalendar) value);
         case TIME_MICROS:
           // Edm.Time
-          return extractTimeMicros(fieldName, value);
+          ensureTypeValid(fieldName, value, GregorianCalendar.class);
+          return extractTimeMicros((GregorianCalendar) value);
         case DECIMAL:
-          return extractDecimal(fieldName, value, schema);
+          ensureTypeValid(fieldName, value, BigDecimal.class);
+          return extractDecimal(fieldName, (BigDecimal) value, schema);
         default:
           throw new UnexpectedFormatException(String.format("Field '%s' is of unsupported type '%s'", fieldName,
                                                             fieldLogicalType.name().toLowerCase()));
@@ -108,28 +110,30 @@ public class ODataEntryToRecordTransformer {
         return value;
       case INT:
         // Edm.Byte, Edm.Int16, Edm.Int32, Edm.SByte
-        ensureTypeValid(fieldName, value, Short.class, Byte.class, Integer.class, Long.class);
+        ensureTypeValid(fieldName, value, Short.class, Byte.class, Integer.class);
         return ((Number) value).intValue();
       case FLOAT:
+        // Edm.Single
+        ensureTypeValid(fieldName, value, Float.class);
+        return value;
       case DOUBLE:
-        // Edm.Single, Edm.Double
-        ensureTypeValid(fieldName, value, Double.class, Float.class, BigDecimal.class, Short.class, Byte.class,
-                        Integer.class, Long.class);
-        return ((Number) value).doubleValue();
+        // Edm.Double
+        ensureTypeValid(fieldName, value, Double.class);
+        return value;
       case BYTES:
         // Edm.Binary
-        ensureTypeValid(fieldName, value, byte[].class, Byte[].class);
-        if (value instanceof Byte[]) {
-          return ArrayUtils.toPrimitive((Byte[]) value);
-        }
+        ensureTypeValid(fieldName, value, byte[].class);
         return value;
       case LONG:
         // Edm.Int64
-        ensureTypeValid(fieldName, value, Short.class, Byte.class, Integer.class, Long.class, BigInteger.class);
-        return ((Number) value).longValue();
+        ensureTypeValid(fieldName, value, Long.class);
+        return value;
       case STRING:
-        // Edm.String, Edm.Guid
-        ensureTypeValid(fieldName, value, String.class, UUID.class);
+        // Edm.String, Edm.Guid, Edm.DateTimeOffset
+        ensureTypeValid(fieldName, value, String.class, UUID.class, Calendar.class);
+        if (value instanceof Calendar) {
+          return extractDateTimeOffset(fieldName, (Calendar) value);
+        }
         return value.toString();
       default:
         throw new UnexpectedFormatException(String.format("Field '%s' is of unsupported type '%s'", fieldName,
@@ -137,92 +141,37 @@ public class ODataEntryToRecordTransformer {
     }
   }
 
-  private long extractTimeMillis(String fieldName, Object value) {
-    ensureTypeValid(fieldName, value, Calendar.class, Date.class, Timestamp.class, Time.class, Long.class);
-    if (value instanceof Long) {
-      // Edm.Time stored as milliseconds, return as it is
-      return (long) value;
+  private String extractDateTimeOffset(String fieldName, Calendar value) {
+    try {
+      return EdmDateTimeOffset.getInstance().valueToString(value, EdmLiteralKind.DEFAULT, null);
+    } catch (EdmSimpleTypeException e) {
+      throw new UnexpectedFormatException(String.format("Unsupported value for '%s' field: '%s'", fieldName, value));
     }
-    long nanos = extractNanosOfDay(value);
-    return TimeUnit.NANOSECONDS.toMillis(nanos);
   }
 
-  private long extractTimeMicros(String fieldName, Object value) {
-    ensureTypeValid(fieldName, value, Calendar.class, Date.class, Timestamp.class, Time.class, Long.class);
-    if (value instanceof Long) {
-      // Edm.Time stored as milliseconds, convert to microseconds first
-      return TimeUnit.MILLISECONDS.toMicros((long) value);
-    }
-    long nanos = extractNanosOfDay(value);
+  private int extractTimeMillis(GregorianCalendar value) {
+    long nanos = value.toZonedDateTime().toLocalTime().toNanoOfDay();
+    return Math.toIntExact(TimeUnit.NANOSECONDS.toMillis(nanos));
+  }
+
+  private long extractTimeMicros(GregorianCalendar value) {
+    long nanos = value.toZonedDateTime().toLocalTime().toNanoOfDay();
     return TimeUnit.NANOSECONDS.toMicros(nanos);
   }
 
-  private long extractTimestampMillis(String fieldName, Object value) {
-    ensureTypeValid(fieldName, value, Calendar.class, Date.class, Timestamp.class, Long.class);
-    if (value instanceof Long) {
-      // Edm.DateTime, Edm.DateTimeOffset stored as milliseconds, return as it is
-      return (long) value;
-    }
-    Instant instant = extractInstant(value);
+  private long extractTimestampMillis(Calendar value) {
+    Instant instant = value.toInstant();
     long millis = TimeUnit.SECONDS.toMillis(instant.getEpochSecond());
     return Math.addExact(millis, TimeUnit.NANOSECONDS.toMillis(instant.getNano()));
   }
 
-  private long extractTimestampMicros(String fieldName, Object value) {
-    ensureTypeValid(fieldName, value, Calendar.class, Date.class, Timestamp.class, Long.class);
-    if (value instanceof Long) {
-      // Edm.DateTime, Edm.DateTimeOffset stored as milliseconds, convert to microseconds first
-      return TimeUnit.MILLISECONDS.toMicros((long) value);
-    }
-    Instant instant = extractInstant(value);
+  private long extractTimestampMicros(Calendar value) {
+    Instant instant = value.toInstant();
     long micros = TimeUnit.SECONDS.toMicros(instant.getEpochSecond());
     return Math.addExact(micros, TimeUnit.NANOSECONDS.toMicros(instant.getNano()));
   }
 
-  private long extractNanosOfDay(Object value) {
-    if (value instanceof Calendar) {
-      Instant instant = ((Calendar) value).toInstant();
-      return LocalDateTime.ofInstant(instant, ZoneOffset.UTC).toLocalTime().toNanoOfDay();
-    }
-    if (value instanceof Time) {
-      return ((Time) value).toLocalTime().toNanoOfDay();
-    }
-    if (value instanceof Timestamp) {
-      return ((Timestamp) value).toLocalDateTime().toLocalTime().toNanoOfDay();
-    }
-    // instanceof Date
-    Instant instant = ((Date) value).toInstant();
-    return LocalDateTime.ofInstant(instant, ZoneOffset.UTC).toLocalTime().toNanoOfDay();
-  }
-
-  private Instant extractInstant(Object value) {
-    if (value instanceof Calendar) {
-      return ((Calendar) value).toInstant();
-    }
-    if (value instanceof Timestamp) {
-      return ((Timestamp) value).toInstant();
-    }
-    // instanceof Date
-    return ((Date) value).toInstant();
-  }
-
-  private byte[] extractDecimal(String fieldName, Object value, Schema schema) {
-    ensureTypeValid(fieldName, value, BigDecimal.class, BigInteger.class, Double.class, Float.class, Byte.class,
-                    Short.class, Integer.class, Long.class);
-
-    BigDecimal decimal;
-    if (value instanceof BigDecimal) {
-      decimal = (BigDecimal) value;
-    } else if (value instanceof BigInteger) {
-      decimal = new BigDecimal((BigInteger) value);
-    } else if ((value instanceof Double) || (value instanceof Float)) {
-      double doubleValue = ((Number) value).doubleValue();
-      decimal = new BigDecimal(doubleValue);
-    } else {
-      long longValue = ((Number) value).longValue();
-      decimal = new BigDecimal(longValue);
-    }
-
+  private byte[] extractDecimal(String fieldName, BigDecimal decimal, Schema schema) {
     int schemaPrecision = schema.getPrecision();
     int schemaScale = schema.getScale();
     if (decimal.precision() > schemaPrecision) {

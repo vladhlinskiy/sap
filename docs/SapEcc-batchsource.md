@@ -28,4 +28,24 @@ https://www.odata.org/documentation/odata-version-3-0/url-conventions/
 **Output Schema:** Specifies the schema of the documents.
 
 
-# TODO mappings
+Data Types Mapping
+----------
+
+    | OData V2 Data Type              | CDAP Schema Data Type | Comment                                            |
+    | ------------------------------- | --------------------- | -------------------------------------------------- |
+    | Edm.Binary                      | bytes                 |                                                    |
+    | Edm.Boolean                     | boolean               |                                                    |
+    | Edm.Byte                        | int                   |                                                    |
+    | Edm.DateTime                    | timestamp             |                                                    |
+    | Edm.Decimal                     | decimal               |                                                    |
+    | Edm.Double                      | double                |                                                    |
+    | Edm.Single                      | float                 |                                                    |
+    | Edm.Guid                        | string                |                                                    |
+    | Edm.Int16                       | int                   |                                                    |
+    | Edm.Int32                       | int                   |                                                    |
+    | Edm.Int64                       | long                  |                                                    |
+    | Edm.SByte                       | int                   |                                                    |
+    | Edm.String                      | string                |                                                    |
+    | Edm.Time                        | time                  |                                                    |
+    | Edm.DateTimeOffset              | string                | Timestamp string in the following format:          |
+    |                                 |                       | "2019-08-29T14:52:08.155+02:00"                    |
