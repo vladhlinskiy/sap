@@ -21,6 +21,7 @@ import java.util.HashMap;
 import java.util.Map;
 import javax.annotation.Nullable;
 
+
 /**
  * OData property metadata.
  */
@@ -36,7 +37,6 @@ public class PropertyMetadata {
 
   @Nullable
   private final Integer scale;
-
 
   public PropertyMetadata(String name, String edmTypeName, boolean nullable, Integer precision, Integer scale,
                           Map<String, String> annotations) {
