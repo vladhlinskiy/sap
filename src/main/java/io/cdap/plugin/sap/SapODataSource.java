@@ -33,6 +33,8 @@ import io.cdap.cdap.etl.api.validation.InvalidStageException;
 import io.cdap.plugin.common.LineageRecorder;
 import io.cdap.plugin.sap.exception.ODataException;
 import org.apache.hadoop.io.NullWritable;
+import org.apache.olingo.odata2.api.edm.EdmAnnotationAttribute;
+import org.apache.olingo.odata2.api.edm.EdmAnnotations;
 import org.apache.olingo.odata2.api.edm.EdmEntityType;
 import org.apache.olingo.odata2.api.edm.EdmException;
 import org.apache.olingo.odata2.api.edm.EdmProperty;
@@ -40,7 +42,9 @@ import org.apache.olingo.odata2.api.edm.EdmTyped;
 import org.apache.olingo.odata2.api.ep.entry.ODataEntry;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 /**
@@ -113,7 +117,9 @@ public class SapODataSource extends BatchSource<NullWritable, ODataEntry, Struct
   public void initialize(BatchRuntimeContext context) throws Exception {
     super.initialize(context);
     Schema schema = context.getOutputSchema();
-    this.transformer = new ODataEntryToRecordTransformer(schema);
+    this.transformer = config.isIncludeMetadataAnnotations()
+      ? new ODataEntryToRecordWithMetadataTransformer(schema, getMetadataAnnotations())
+      : new ODataEntryToRecordTransformer(schema);
   }
 
   @Override
@@ -133,7 +139,7 @@ public class SapODataSource extends BatchSource<NullWritable, ODataEntry, Struct
           continue;
         }
         EdmTyped property = edmEntityType.getProperty(propertyName);
-        fields.add(getSchemaField(property));
+        fields.add(getSchemaField(property, config.isIncludeMetadataAnnotations()));
       }
       return Schema.recordOf("output", fields);
     } catch (EdmException | ODataException e) {
@@ -141,15 +147,63 @@ public class SapODataSource extends BatchSource<NullWritable, ODataEntry, Struct
     }
   }
 
-  private Schema.Field getSchemaField(EdmTyped edmTyped) throws EdmException {
-    Schema nonNullableSchema = convertPropertyType(edmTyped);
-    EdmProperty property = (EdmProperty) edmTyped;
-    Schema schema = property.getFacets().isNullable() ? Schema.nullableOf(nonNullableSchema) : nonNullableSchema;
-    return Schema.Field.of(edmTyped.getName(), schema);
+  // TODO duplication
+  private Map<String, Map<String, String>> getMetadataAnnotations() {
+
+    OData2Client oData2Client = new OData2Client(config.getUrl(), config.getUser(), config.getPassword());
+    try {
+      EdmEntityType edmEntityType = oData2Client.getEntitySetType(config.getResourcePath());
+      List<String> selectProperties = config.getSelectProperties();
+      Map<String, Map<String, String>> fieldNameToMetadata = new HashMap<>();
+      for (String propertyName : edmEntityType.getPropertyNames()) {
+        if (!selectProperties.isEmpty() && !selectProperties.contains(propertyName)) {
+          continue;
+        }
+
+        EdmProperty property = (EdmProperty) edmEntityType.getProperty(propertyName);
+        List<EdmAnnotationAttribute> annotationAttributes = property.getAnnotations().getAnnotationAttributes();
+        if (annotationAttributes == null) {
+          continue;
+        }
+
+        Map<String, String> fieldMetadata = annotationAttributes.stream()
+          .collect(Collectors.toMap(EdmAnnotationAttribute::getName, EdmAnnotationAttribute::getText));
+        fieldNameToMetadata.put(property.getName(), fieldMetadata);
+      }
+
+      return fieldNameToMetadata;
+    } catch (EdmException | ODataException e) {
+      throw new InvalidStageException("Unable to get metadata annotations for the entity type: " + e.getMessage(), e);
+    }
   }
 
-  private Schema convertPropertyType(EdmTyped edmTyped) throws EdmException {
-    switch (edmTyped.getType().getName()) {
+  private Schema.Field getSchemaField(EdmTyped edmTyped, boolean includeAnnotations) throws EdmException {
+    EdmProperty property = (EdmProperty) edmTyped;
+    Schema nonNullableSchema = convertPropertyType(property);
+    Schema schema = property.getFacets().isNullable() ? Schema.nullableOf(nonNullableSchema) : nonNullableSchema;
+
+    boolean annotationsExist = property.getAnnotations().getAnnotationAttributes() != null;
+    return includeAnnotations && annotationsExist ?
+      getFieldWithAnnotations(property, schema) : Schema.Field.of(property.getName(), schema);
+  }
+
+  private Schema.Field getFieldWithAnnotations(EdmProperty property, Schema valueSchema) throws EdmException {
+    EdmAnnotations annotations = property.getAnnotations();
+    List<Schema.Field> fields = annotations.getAnnotationAttributes().stream()
+      .map(a -> Schema.Field.of(a.getName(), Schema.of(Schema.Type.STRING)))
+      .collect(Collectors.toList());
+
+    Schema.Field metadataFiled = Schema.Field.of(SapODataConstants.METADATA_ANNOTATIONS_FIELD_NAME,
+                                                 Schema.recordOf(property.getName() + "-metadata-record", fields));
+
+    Schema valueWithMetadataSchema = Schema.recordOf(property.getName() + "-value-with-metadata-record",
+                                                     Schema.Field.of(SapODataConstants.VALUE_FIELD_NAME, valueSchema),
+                                                     metadataFiled);
+    return Schema.Field.of(property.getName(), valueWithMetadataSchema);
+  }
+
+  private Schema convertPropertyType(EdmProperty edmProperty) throws EdmException {
+    switch (edmProperty.getType().getName()) {
       case "Binary":
         return Schema.of(Schema.Type.BYTES);
       case "Boolean":
@@ -166,8 +220,7 @@ public class SapODataSource extends BatchSource<NullWritable, ODataEntry, Struct
       case "Time":
         return Schema.of(Schema.LogicalType.TIME_MICROS);
       case "Decimal":
-        EdmProperty property = (EdmProperty) edmTyped;
-        return Schema.decimalOf(property.getFacets().getPrecision(), property.getFacets().getScale());
+        return Schema.decimalOf(edmProperty.getFacets().getPrecision(), edmProperty.getFacets().getScale());
       case "Double":
         return Schema.of(Schema.Type.DOUBLE);
       case "Single":
@@ -184,8 +237,8 @@ public class SapODataSource extends BatchSource<NullWritable, ODataEntry, Struct
         return Schema.of(Schema.Type.STRING);
       default:
         // this should never happen
-        throw new InvalidStageException(String.format("Field '%s' is of unsupported type '%s'.", edmTyped.getName(),
-                                                      edmTyped.getType().getName()));
+        throw new InvalidStageException(String.format("Field '%s' is of unsupported type '%s'.", edmProperty.getName(),
+                                                      edmProperty.getType().getName()));
     }
   }
 }

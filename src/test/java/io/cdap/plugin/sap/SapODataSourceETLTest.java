@@ -117,6 +117,7 @@ public class SapODataSourceETLTest extends HydratorTestBase {
     ImmutableMap.Builder<String, String> properties = new ImmutableMap.Builder<String, String>()
       // http://vhcalnplci.dummy.nodomain:8000/sap/opu/odata/SAP/ZGW100_XX_S2_SRV/
       .put(SapODataConstants.ODATA_SERVICE_URL, getServerAddress() + "/sap/opu/odata/SAP/ZGW100_XX_S2_SRV")
+      .put(SapODataConstants.INCLUDE_METADATA_ANNOTATIONS, "false")
       .put(SapODataConstants.RESOURCE_PATH, "AllDataTypes");
     if (schema != null) {
       properties.put(SapODataConstants.SCHEMA, schema.toString());
