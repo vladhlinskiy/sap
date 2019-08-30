@@ -50,7 +50,8 @@ public class SapODataConfig extends PluginConfig {
   private static final Set<Schema.Type> SUPPORTED_SIMPLE_TYPES = ImmutableSet.of(Schema.Type.BOOLEAN, Schema.Type.INT,
                                                                                  Schema.Type.FLOAT, Schema.Type.DOUBLE,
                                                                                  Schema.Type.BYTES, Schema.Type.LONG,
-                                                                                 Schema.Type.STRING);
+                                                                                 Schema.Type.STRING,
+                                                                                 Schema.Type.RECORD); // TODO
 
   private static final Set<Schema.LogicalType> SUPPORTED_LOGICAL_TYPES = ImmutableSet.of(
     Schema.LogicalType.DECIMAL, Schema.LogicalType.TIMESTAMP_MILLIS, Schema.LogicalType.TIMESTAMP_MICROS,
@@ -93,8 +94,12 @@ public class SapODataConfig extends PluginConfig {
   @Nullable
   private String schema;
 
+  @Name(SapODataConstants.INCLUDE_METADATA_ANNOTATIONS)
+  @Description("Whether the plugin should read SAP metadata annotations and include them to each CDAP record.")
+  private boolean includeMetadataAnnotations;
+
   public SapODataConfig(String referenceName, String url, String resourcePath, String query, String user,
-                        String password, String schema) {
+                        String password, String schema, boolean includeMetadataAnnotations) {
     this.referenceName = referenceName;
     this.url = url;
     this.resourcePath = resourcePath;
@@ -102,6 +107,7 @@ public class SapODataConfig extends PluginConfig {
     this.user = user;
     this.password = password;
     this.schema = schema;
+    this.includeMetadataAnnotations = includeMetadataAnnotations;
   }
 
   public String getReferenceName() {
@@ -169,6 +175,10 @@ public class SapODataConfig extends PluginConfig {
   @Nullable
   public String getSchema() {
     return schema;
+  }
+  
+  public boolean isIncludeMetadataAnnotations() {
+    return includeMetadataAnnotations;
   }
 
   /**

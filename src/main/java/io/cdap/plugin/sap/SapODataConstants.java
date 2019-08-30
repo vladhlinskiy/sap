@@ -59,4 +59,14 @@ public class SapODataConstants {
    * Configuration property name used to specify the schema of the entries.
    */
   public static final String SCHEMA = "schema";
+
+  /**
+   * Configuration property name used to specify whether the plugin should read metadata annotations and include them
+   * to each CDAP record.
+   */
+  public static final String INCLUDE_METADATA_ANNOTATIONS = "includeMetadataAnnotations";
+
+  public static final String VALUE_FIELD_NAME = "value";
+
+  public static final String METADATA_ANNOTATIONS_FIELD_NAME = "metadata-annotations";
 }
