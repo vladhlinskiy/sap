@@ -14,17 +14,18 @@
  * the License.
  */
 
-package io.cdap.plugin.sap;
+package io.cdap.plugin.sap.transformer;
 
-import com.google.common.base.Preconditions;
 import io.cdap.cdap.api.data.format.StructuredRecord;
 import io.cdap.cdap.api.data.schema.Schema;
-import org.apache.olingo.odata2.api.ep.entry.ODataEntry;
+import io.cdap.plugin.sap.SapODataConstants;
+import io.cdap.plugin.sap.odata.ODataEntity;
 
 import java.util.Map;
 
 /**
- * Transforms {@link ODataEntry} to {@link StructuredRecord} including metadata annotations.
+ * Transforms {@link ODataEntity} to {@link StructuredRecord} including metadata annotations.
+ * TODO currently works only for OData 2
  */
 public class ODataEntryToRecordWithMetadataTransformer extends ODataEntryToRecordTransformer {
 
@@ -37,35 +38,32 @@ public class ODataEntryToRecordWithMetadataTransformer extends ODataEntryToRecor
   }
 
   /**
-   * Transforms given {@link ODataEntry} to {@link StructuredRecord} including metadata annotations.
+   * Transforms given {@link ODataEntity} to {@link StructuredRecord} including metadata annotations.
    *
-   * @param oDataEntry ODataEntry to be transformed.
-   * @return {@link StructuredRecord} with metadata annotations that corresponds to the given {@link ODataEntry}.
+   * @param oDataEntity ODataEntry to be transformed.
+   * @return {@link StructuredRecord} with metadata annotations that corresponds to the given {@link ODataEntity}.
    */
-  public StructuredRecord transform(ODataEntry oDataEntry) {
+  public StructuredRecord transform(ODataEntity oDataEntity) {
     StructuredRecord.Builder builder = StructuredRecord.builder(schema);
     for (Schema.Field field : schema.getFields()) {
       Schema nonNullableSchema = field.getSchema().isNullable() ?
         field.getSchema().getNonNullable() : field.getSchema();
       String fieldName = field.getName();
-      Object value = oDataEntry.getProperties().get(fieldName);
+      Object value = oDataEntity.getProperties().get(fieldName);
       builder.set(fieldName, extractValueMetadataRecord(fieldName, value, nonNullableSchema));
     }
     return builder.build();
   }
 
   private StructuredRecord extractValueMetadataRecord(String fieldName, Object value, Schema schema) {
-    Preconditions.checkArgument(schema.getType() == Schema.Type.RECORD); // TODO
-
     StructuredRecord.Builder builder = StructuredRecord.builder(schema);
 
-    Schema.Field valueField = schema.getField(SapODataConstants.VALUE_FIELD_NAME); // TODO
+    Schema.Field valueField = schema.getField(SapODataConstants.VALUE_FIELD_NAME);
     Schema valueNonNullableSchema = valueField.getSchema().isNullable()
       ? valueField.getSchema().getNonNullable() : valueField.getSchema();
     builder.set(SapODataConstants.VALUE_FIELD_NAME, extractValue(fieldName, value, valueNonNullableSchema));
 
-
-    Schema.Field metadataField = schema.getField(SapODataConstants.METADATA_ANNOTATIONS_FIELD_NAME); // TODO
+    Schema.Field metadataField = schema.getField(SapODataConstants.METADATA_ANNOTATIONS_FIELD_NAME);
     Schema metadataNonNullableSchema = metadataField.getSchema().isNullable()
       ? metadataField.getSchema().getNonNullable() : metadataField.getSchema();
     StructuredRecord metadataRecord = extractMetadataRecord(fieldName, metadataNonNullableSchema);

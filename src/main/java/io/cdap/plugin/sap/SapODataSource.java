@@ -32,18 +32,15 @@ import io.cdap.cdap.etl.api.batch.BatchSource;
 import io.cdap.cdap.etl.api.batch.BatchSourceContext;
 import io.cdap.cdap.etl.api.validation.InvalidStageException;
 import io.cdap.plugin.common.LineageRecorder;
-import io.cdap.plugin.sap.exception.ODataException;
+import io.cdap.plugin.sap.odata.EntityType;
+import io.cdap.plugin.sap.odata.GenericODataClient;
+import io.cdap.plugin.sap.odata.ODataEntity;
+import io.cdap.plugin.sap.odata.Property;
+import io.cdap.plugin.sap.odata.exception.ODataException;
+import io.cdap.plugin.sap.transformer.ODataEntryToRecordTransformer;
+import io.cdap.plugin.sap.transformer.ODataEntryToRecordWithMetadataTransformer;
 import org.apache.hadoop.io.NullWritable;
-import org.apache.olingo.odata2.api.edm.EdmAnnotationAttribute;
-import org.apache.olingo.odata2.api.edm.EdmAnnotations;
-import org.apache.olingo.odata2.api.edm.EdmEntityType;
-import org.apache.olingo.odata2.api.edm.EdmException;
-import org.apache.olingo.odata2.api.edm.EdmProperty;
-import org.apache.olingo.odata2.api.edm.EdmTyped;
-import org.apache.olingo.odata2.api.ep.entry.ODataEntry;
 
-import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -54,7 +51,7 @@ import java.util.stream.Collectors;
 @Plugin(type = BatchSource.PLUGIN_TYPE)
 @Name(SapODataConstants.PLUGIN_NAME)
 @Description("Read data from SAP OData service.")
-public class SapODataSource extends BatchSource<NullWritable, ODataEntry, StructuredRecord> {
+public class SapODataSource extends BatchSource<NullWritable, ODataEntity, StructuredRecord> {
 
   private final SapODataConfig config;
   private ODataEntryToRecordTransformer transformer;
@@ -70,7 +67,7 @@ public class SapODataSource extends BatchSource<NullWritable, ODataEntry, Struct
     config.validate(collector);
     try {
       // API call validation
-      new OData2Client(config.getUrl(), config.getUser(), config.getPassword())
+      new GenericODataClient(config.getUrl(), config.getUser(), config.getPassword())
         .getEntitySetType(config.getResourcePath());
     } catch (ODataException e) {
       collector.addFailure("Unable to connect to OData Service: " + e.getMessage(), null)
@@ -95,7 +92,7 @@ public class SapODataSource extends BatchSource<NullWritable, ODataEntry, Struct
     config.validate(collector);
     try {
       // API call validation
-      new OData2Client(config.getUrl(), config.getUser(), config.getPassword())
+      new GenericODataClient(config.getUrl(), config.getUser(), config.getPassword())
         .getEntitySetType(config.getResourcePath());
     } catch (ODataException e) {
       collector.addFailure("Unable to connect to OData Service: " + e.getMessage(), null)
@@ -125,74 +122,50 @@ public class SapODataSource extends BatchSource<NullWritable, ODataEntry, Struct
   }
 
   @Override
-  public void transform(KeyValue<NullWritable, ODataEntry> input, Emitter<StructuredRecord> emitter) {
-    ODataEntry entity = input.getValue();
+  public void transform(KeyValue<NullWritable, ODataEntity> input, Emitter<StructuredRecord> emitter) {
+    ODataEntity entity = input.getValue();
     emitter.emit(transformer.transform(entity));
   }
 
   public Schema getSchema() {
-    OData2Client oData2Client = new OData2Client(config.getUrl(), config.getUser(), config.getPassword());
+    GenericODataClient oDataClient = new GenericODataClient(config.getUrl(), config.getUser(), config.getPassword());
     try {
-      EdmEntityType edmEntityType = oData2Client.getEntitySetType(config.getResourcePath());
-      List<String> selectProperties = config.getSelectProperties();
-      List<Schema.Field> fields = new ArrayList<>();
-      for (String propertyName : edmEntityType.getPropertyNames()) {
-        if (!selectProperties.isEmpty() && !selectProperties.contains(propertyName)) {
-          continue;
-        }
-        EdmTyped property = edmEntityType.getProperty(propertyName);
-        fields.add(getSchemaField(property, config.isIncludeMetadataAnnotations()));
-      }
+      EntityType entityType = oDataClient.getEntitySetType(config.getResourcePath());
+      List<Schema.Field> fields = entityType.getProperties().stream()
+        .filter(p -> config.getSelectProperties().isEmpty() || config.getSelectProperties().contains(p.getName()))
+        .map(property -> getSchemaField(property, config.isIncludeMetadataAnnotations()))
+        .collect(Collectors.toList());
       return Schema.recordOf("output", fields);
-    } catch (EdmException | ODataException e) {
+    } catch (ODataException e) {
       throw new InvalidStageException("Unable to get details about the entity type: " + e.getMessage(), e);
     }
   }
 
-  // TODO duplication
+  // TODO currently works only for OData 2
   private Map<String, Map<String, String>> getMetadataAnnotations() {
-
-    OData2Client oData2Client = new OData2Client(config.getUrl(), config.getUser(), config.getPassword());
+    GenericODataClient oDataClient = new GenericODataClient(config.getUrl(), config.getUser(), config.getPassword());
     try {
-      EdmEntityType edmEntityType = oData2Client.getEntitySetType(config.getResourcePath());
-      List<String> selectProperties = config.getSelectProperties();
-      Map<String, Map<String, String>> fieldNameToMetadata = new HashMap<>();
-      for (String propertyName : edmEntityType.getPropertyNames()) {
-        if (!selectProperties.isEmpty() && !selectProperties.contains(propertyName)) {
-          continue;
-        }
-
-        EdmProperty property = (EdmProperty) edmEntityType.getProperty(propertyName);
-        List<EdmAnnotationAttribute> annotationAttributes = property.getAnnotations().getAnnotationAttributes();
-        if (annotationAttributes == null) {
-          continue;
-        }
-
-        Map<String, String> fieldMetadata = annotationAttributes.stream()
-          .collect(Collectors.toMap(EdmAnnotationAttribute::getName, EdmAnnotationAttribute::getText));
-        fieldNameToMetadata.put(property.getName(), fieldMetadata);
-      }
-
-      return fieldNameToMetadata;
-    } catch (EdmException | ODataException e) {
+      EntityType entityType = oDataClient.getEntitySetType(config.getResourcePath());
+      return entityType.getProperties().stream()
+        .filter(p -> config.getSelectProperties().isEmpty() || config.getSelectProperties().contains(p.getName()))
+        .collect(Collectors.toMap(Property::getName, Property::getAnnotations));
+    } catch (ODataException e) {
       throw new InvalidStageException("Unable to get metadata annotations for the entity type: " + e.getMessage(), e);
     }
   }
 
-  private Schema.Field getSchemaField(EdmTyped edmTyped, boolean includeAnnotations) throws EdmException {
-    EdmProperty property = (EdmProperty) edmTyped;
+  private Schema.Field getSchemaField(Property property, boolean includeAnnotations) {
     Schema nonNullableSchema = convertPropertyType(property);
-    Schema schema = property.getFacets().isNullable() ? Schema.nullableOf(nonNullableSchema) : nonNullableSchema;
+    Schema schema = property.isNullable() ? Schema.nullableOf(nonNullableSchema) : nonNullableSchema;
 
-    boolean annotationsExist = property.getAnnotations().getAnnotationAttributes() != null;
-    return includeAnnotations && annotationsExist ?
+    return includeAnnotations && property.getAnnotations() != null ?
       getFieldWithAnnotations(property, schema) : Schema.Field.of(property.getName(), schema);
   }
 
-  private Schema.Field getFieldWithAnnotations(EdmProperty property, Schema valueSchema) throws EdmException {
-    EdmAnnotations annotations = property.getAnnotations();
-    List<Schema.Field> fields = annotations.getAnnotationAttributes().stream()
-      .map(a -> Schema.Field.of(a.getName(), Schema.of(Schema.Type.STRING)))
+  private Schema.Field getFieldWithAnnotations(Property property, Schema valueSchema) {
+    Map<String, String> annotations = property.getAnnotations();
+    List<Schema.Field> fields = annotations.keySet().stream()
+      .map(name -> Schema.Field.of(name, Schema.of(Schema.Type.STRING)))
       .collect(Collectors.toList());
 
     Schema.Field metadataFiled = Schema.Field.of(SapODataConstants.METADATA_ANNOTATIONS_FIELD_NAME,
@@ -204,8 +177,9 @@ public class SapODataSource extends BatchSource<NullWritable, ODataEntry, Struct
     return Schema.Field.of(property.getName(), valueWithMetadataSchema);
   }
 
-  private Schema convertPropertyType(EdmProperty edmProperty) throws EdmException {
-    switch (edmProperty.getType().getName()) {
+  // TODO add OData 4 data types
+  private Schema convertPropertyType(Property property) {
+    switch (property.getEdmTypeName()) {
       case "Binary":
         return Schema.of(Schema.Type.BYTES);
       case "Boolean":
@@ -222,7 +196,7 @@ public class SapODataSource extends BatchSource<NullWritable, ODataEntry, Struct
       case "Time":
         return Schema.of(Schema.LogicalType.TIME_MICROS);
       case "Decimal":
-        return Schema.decimalOf(edmProperty.getFacets().getPrecision(), edmProperty.getFacets().getScale());
+        return Schema.decimalOf(property.getPrecision(), property.getScale());
       case "Double":
         return Schema.of(Schema.Type.DOUBLE);
       case "Single":
@@ -239,8 +213,8 @@ public class SapODataSource extends BatchSource<NullWritable, ODataEntry, Struct
         return Schema.of(Schema.Type.STRING);
       default:
         // this should never happen
-        throw new InvalidStageException(String.format("Field '%s' is of unsupported type '%s'.", edmProperty.getName(),
-                                                      edmProperty.getType().getName()));
+        throw new InvalidStageException(String.format("Field '%s' is of unsupported type '%s'.", property.getName(),
+                                                      property.getEdmTypeName()));
     }
   }
 }

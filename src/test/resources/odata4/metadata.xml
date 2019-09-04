@@ -1,0 +1,216 @@
+<?xml version="1.0" encoding="utf-8"?>
+<edmx:Edmx Version="4.0" xmlns:edmx="http://docs.oasis-open.org/odata/ns/edmx"
+           xmlns="http://docs.oasis-open.org/odata/ns/edm">
+  <edmx:Reference
+          Uri="https://raw.githubusercontent.com/SAP/openui5/master/src/sap.ui.core/test/sap/ui/core/demokit/sample/ViewTemplate/scenario/data/com.sap.vocabularies.Common.v1.xml">
+    <edmx:Include Namespace="com.sap.vocabularies.Common.v1" Alias="SAP__common"/>
+  </edmx:Reference>
+  <edmx:Reference
+          Uri="https://raw.githubusercontent.com/oasis-tcs/odata-vocabularies/master/vocabularies/Org.OData.Measures.V1.xml">
+    <edmx:Include Namespace="Org.OData.Measures.V1" Alias="Measures"/>
+  </edmx:Reference>
+  <edmx:Reference
+          Uri="https://raw.githubusercontent.com/oasis-tcs/odata-vocabularies/master/vocabularies/Org.OData.Core.V1.xml">
+    <edmx:Include Namespace="Org.OData.Core.V1" Alias="SAP__core"/>
+  </edmx:Reference>
+  <edmx:DataServices>
+    <Schema Namespace="com.sap.gateway.default.ze2e001_salesorder.v0001" Alias="SAP__self">
+      <EntityType Name="SalesOrderType">
+        <Key>
+          <PropertyRef Name="Salesorder"/>
+        </Key>
+        <Property Name="Salesorder" Type="Edm.String" Nullable="false" MaxLength="10"/>
+        <Property Name="Createdbyuser" Type="Edm.String" Nullable="false" MaxLength="12"/>
+        <Property Name="Creationdatetime" Type="Edm.DateTimeOffset" Nullable="false" Precision="7"/>
+        <Property Name="Lastchangedbyuser" Type="Edm.String" Nullable="false" MaxLength="12"/>
+        <Property Name="Lastchangeddatetime" Type="Edm.DateTimeOffset" Nullable="false" Precision="7"/>
+        <Property Name="Iscreatedbybusinesspartner" Type="Edm.Boolean" Nullable="false"/>
+        <Property Name="Islastchangedbybusinesspartner" Type="Edm.Boolean" Nullable="false"/>
+        <Property Name="Customer" Type="Edm.String" Nullable="false" MaxLength="10"/>
+        <Property Name="Customercontact" Type="Edm.String" Nullable="false" MaxLength="10"/>
+        <Property Name="Transactioncurrency" Type="Edm.String" Nullable="false" MaxLength="5"/>
+        <Property Name="Grossamountintransaccurrency" Type="Edm.Decimal" Nullable="false" Precision="16"
+                  Scale="variable"/>
+        <Property Name="Netamountintransactioncurrency" Type="Edm.Decimal" Nullable="false" Precision="16"
+                  Scale="variable"/>
+        <Property Name="Taxamountintransactioncurrency" Type="Edm.Decimal" Nullable="false" Precision="16"
+                  Scale="variable"/>
+        <Property Name="Salesorderlifecyclestatus" Type="Edm.String" Nullable="false" MaxLength="1"/>
+        <Property Name="Salesorderbillingstatus" Type="Edm.String" Nullable="false" MaxLength="1"/>
+        <Property Name="Salesorderdeliverystatus" Type="Edm.String" Nullable="false" MaxLength="1"/>
+        <Property Name="Salesorderoverallstatus" Type="Edm.String" Nullable="false" MaxLength="1"/>
+        <Property Name="Opportunity" Type="Edm.String" Nullable="false" MaxLength="35"/>
+        <Property Name="Salesorderpaymentmethod" Type="Edm.String" Nullable="false" MaxLength="1"/>
+        <Property Name="Salesorderpaymentterms" Type="Edm.String" Nullable="false" MaxLength="1"/>
+        <Property Name="Billtoparty" Type="Edm.String" Nullable="false" MaxLength="10"/>
+        <Property Name="Billtopartyrole" Type="Edm.String" Nullable="false" MaxLength="3"/>
+        <Property Name="Shiptoparty" Type="Edm.String" Nullable="false" MaxLength="10"/>
+        <Property Name="Shiptopartyrole" Type="Edm.String" Nullable="false" MaxLength="3"/>
+        <NavigationProperty Name="_Item"
+                            Type="Collection(com.sap.gateway.default.ze2e001_salesorder.v0001.SalesOrderItemType)">
+          <OnDelete Action="None"/>
+        </NavigationProperty>
+      </EntityType>
+      <EntityType Name="SalesOrderItemType">
+        <Key>
+          <PropertyRef Name="Salesorder"/>
+          <PropertyRef Name="Salesorderitem"/>
+        </Key>
+        <Property Name="Salesorder" Type="Edm.String" Nullable="false" MaxLength="10"/>
+        <Property Name="Salesorderitem" Type="Edm.String" Nullable="false" MaxLength="10"/>
+        <Property Name="Product" Type="Edm.String" Nullable="false" MaxLength="10"/>
+        <Property Name="Transactioncurrency" Type="Edm.String" Nullable="false" MaxLength="5"/>
+        <Property Name="Grossamountintransaccurrency" Type="Edm.Decimal" Nullable="false" Precision="16"
+                  Scale="variable"/>
+        <Property Name="Netamountintransactioncurrency" Type="Edm.Decimal" Nullable="false" Precision="16"
+                  Scale="variable"/>
+        <Property Name="Taxamountintransactioncurrency" Type="Edm.Decimal" Nullable="false" Precision="16"
+                  Scale="variable"/>
+        <Property Name="Deliverydatetime" Type="Edm.DateTimeOffset" Nullable="false" Precision="7"/>
+        <Property Name="Unit" Type="Edm.String" Nullable="false" MaxLength="3"/>
+        <Property Name="Quantity" Type="Edm.Decimal" Nullable="false" Precision="13" Scale="3"/>
+      </EntityType>
+      <EntityContainer Name="Container">
+        <EntitySet Name="SalesOrder" EntityType="com.sap.gateway.default.ze2e001_salesorder.v0001.SalesOrderType">
+          <NavigationPropertyBinding Path="_Item" Target="SalesOrderItem"/>
+        </EntitySet>
+        <EntitySet Name="SalesOrderItem"
+                   EntityType="com.sap.gateway.default.ze2e001_salesorder.v0001.SalesOrderItemType"/>
+      </EntityContainer>
+      <Annotations Target="SAP__self.SalesOrderType/Customer">
+        <Annotation Term="SAP__common.ValueListReferences">
+          <Collection>
+            <String>
+              ../../../../f4/sap/h_epm_bp-sh/0001;ps='default-ze2e001_salesorder-0001';va='com.sap.gateway.default.ze2e001_salesorder.v0001.ET-SEPM_ODATA_C_SALESORDER.CUSTOMER'/$metadata
+            </String>
+          </Collection>
+        </Annotation>
+      </Annotations>
+      <Annotations Target="SAP__self.SalesOrderType/Customercontact">
+        <Annotation Term="SAP__common.ValueListReferences">
+          <Collection>
+            <String>
+              ../../../../f4/sap/h_epm_bp-sh/0001;ps='default-ze2e001_salesorder-0001';va='com.sap.gateway.default.ze2e001_salesorder.v0001.ET-SEPM_ODATA_C_SALESORDER.CUSTOMERCONTACT'/$metadata
+            </String>
+          </Collection>
+        </Annotation>
+      </Annotations>
+      <Annotations Target="SAP__self.SalesOrderType/Transactioncurrency">
+        <Annotation Term="SAP__common.ValueListReferences">
+          <Collection>
+            <String>
+              ../../../../f4/sap/h_tcurc-sh/0001;ps='default-ze2e001_salesorder-0001';va='com.sap.gateway.default.ze2e001_salesorder.v0001.ET-SEPM_ODATA_C_SALESORDER.TRANSACTIONCURRENCY'/$metadata
+            </String>
+          </Collection>
+        </Annotation>
+      </Annotations>
+      <Annotations Target="SAP__self.SalesOrderType/Salesorderlifecyclestatus">
+        <Annotation Term="SAP__common.ValueListReferences">
+          <Collection>
+            <String>
+              ../../../../f4/sap/d_so_lc-fv/0001;ps='default-ze2e001_salesorder-0001';va='com.sap.gateway.default.ze2e001_salesorder.v0001.ET-SEPM_ODATA_C_SALESORDER.SALESORDERLIFECYCLESTATUS'/$metadata
+            </String>
+          </Collection>
+        </Annotation>
+        <Annotation Term="SAP__common.ValueListWithFixedValues"/>
+      </Annotations>
+      <Annotations Target="SAP__self.SalesOrderType/Salesorderbillingstatus">
+        <Annotation Term="SAP__common.ValueListReferences">
+          <Collection>
+            <String>
+              ../../../../f4/sap/d_so_cf-fv/0001;ps='default-ze2e001_salesorder-0001';va='com.sap.gateway.default.ze2e001_salesorder.v0001.ET-SEPM_ODATA_C_SALESORDER.SALESORDERBILLINGSTATUS'/$metadata
+            </String>
+          </Collection>
+        </Annotation>
+        <Annotation Term="SAP__common.ValueListWithFixedValues"/>
+      </Annotations>
+      <Annotations Target="SAP__self.SalesOrderType/Salesorderdeliverystatus">
+        <Annotation Term="SAP__common.ValueListReferences">
+          <Collection>
+            <String>
+              ../../../../f4/sap/d_so_or-fv/0001;ps='default-ze2e001_salesorder-0001';va='com.sap.gateway.default.ze2e001_salesorder.v0001.ET-SEPM_ODATA_C_SALESORDER.SALESORDERDELIVERYSTATUS'/$metadata
+            </String>
+          </Collection>
+        </Annotation>
+        <Annotation Term="SAP__common.ValueListWithFixedValues"/>
+      </Annotations>
+      <Annotations Target="SAP__self.SalesOrderType/Salesorderoverallstatus">
+        <Annotation Term="SAP__common.ValueListReferences">
+          <Collection>
+            <String>
+              ../../../../f4/sap/d_so_oa-fv/0001;ps='default-ze2e001_salesorder-0001';va='com.sap.gateway.default.ze2e001_salesorder.v0001.ET-SEPM_ODATA_C_SALESORDER.SALESORDEROVERALLSTATUS'/$metadata
+            </String>
+          </Collection>
+        </Annotation>
+        <Annotation Term="SAP__common.ValueListWithFixedValues"/>
+      </Annotations>
+      <Annotations Target="SAP__self.SalesOrderType/Salesorderpaymentmethod">
+        <Annotation Term="SAP__common.ValueListReferences">
+          <Collection>
+            <String>
+              ../../../../f4/sap/d_pm-fv/0001;ps='default-ze2e001_salesorder-0001';va='com.sap.gateway.default.ze2e001_salesorder.v0001.ET-SEPM_ODATA_C_SALESORDER.SALESORDERPAYMENTMETHOD'/$metadata
+            </String>
+          </Collection>
+        </Annotation>
+        <Annotation Term="SAP__common.ValueListWithFixedValues"/>
+      </Annotations>
+      <Annotations Target="SAP__self.SalesOrderType/Salesorderpaymentterms">
+        <Annotation Term="SAP__common.ValueListReferences">
+          <Collection>
+            <String>
+              ../../../../f4/sap/d_pt-fv/0001;ps='default-ze2e001_salesorder-0001';va='com.sap.gateway.default.ze2e001_salesorder.v0001.ET-SEPM_ODATA_C_SALESORDER.SALESORDERPAYMENTTERMS'/$metadata
+            </String>
+          </Collection>
+        </Annotation>
+        <Annotation Term="SAP__common.ValueListWithFixedValues"/>
+      </Annotations>
+      <Annotations Target="SAP__self.SalesOrderType/Billtopartyrole">
+        <Annotation Term="SAP__common.ValueListReferences">
+          <Collection>
+            <String>
+              ../../../../f4/sap/d_party_role-fv/0001;ps='default-ze2e001_salesorder-0001';va='com.sap.gateway.default.ze2e001_salesorder.v0001.ET-SEPM_ODATA_C_SALESORDER.BILLTOPARTYROLE'/$metadata
+            </String>
+          </Collection>
+        </Annotation>
+        <Annotation Term="SAP__common.ValueListWithFixedValues"/>
+      </Annotations>
+      <Annotations Target="SAP__self.SalesOrderType/Shiptopartyrole">
+        <Annotation Term="SAP__common.ValueListReferences">
+          <Collection>
+            <String>
+              ../../../../f4/sap/d_party_role-fv/0001;ps='default-ze2e001_salesorder-0001';va='com.sap.gateway.default.ze2e001_salesorder.v0001.ET-SEPM_ODATA_C_SALESORDER.SHIPTOPARTYROLE'/$metadata
+            </String>
+          </Collection>
+        </Annotation>
+        <Annotation Term="SAP__common.ValueListWithFixedValues"/>
+      </Annotations>
+      <Annotations Target="SAP__self.SalesOrderItemType/Product">
+        <Annotation Term="SAP__common.ValueListReferences">
+          <Collection>
+            <String>
+              ../../../../f4/sap/h_epm_pr-sh/0001;ps='default-ze2e001_salesorder-0001';va='com.sap.gateway.default.ze2e001_salesorder.v0001.ET-SEPM_ODATA_C_SALESORDERITEM.PRODUCT'/$metadata
+            </String>
+          </Collection>
+        </Annotation>
+      </Annotations>
+      <Annotations Target="SAP__self.SalesOrderItemType/Transactioncurrency">
+        <Annotation Term="SAP__common.ValueListReferences">
+          <Collection>
+            <String>
+              ../../../../f4/sap/h_tcurc-sh/0001;ps='default-ze2e001_salesorder-0001';va='com.sap.gateway.default.ze2e001_salesorder.v0001.ET-SEPM_ODATA_C_SALESORDERITEM.TRANSACTIONCURRENCY'/$metadata
+            </String>
+          </Collection>
+        </Annotation>
+      </Annotations>
+      <Annotations Target="SAP__self.SalesOrderItemType/Unit">
+        <Annotation Term="SAP__common.ValueListReferences">
+          <Collection>
+            <String>
+              ../../../../f4/sap/h_epm_t006-sh/0001;ps='default-ze2e001_salesorder-0001';va='com.sap.gateway.default.ze2e001_salesorder.v0001.ET-SEPM_ODATA_C_SALESORDERITEM.UNIT'/$metadata
+            </String>
+          </Collection>
+        </Annotation>
+      </Annotations>
+    </Schema>
+  </edmx:DataServices>
+</edmx:Edmx>
