@@ -1,0 +1,32 @@
+{
+  "@odata.context": "$metadata#SalesOrder",
+  "@odata.metadataEtag": "W/\"20190302025931\"",
+  "value": [
+    {
+      "Salesorder": "500000000",
+      "Createdbyuser": "EPM_DEMO",
+      "Creationdatetime": "2018-09-30T22:00:00Z",
+      "Lastchangedbyuser": "EPM_DEMO",
+      "Lastchangeddatetime": "2018-10-07T22:00:00Z",
+      "Iscreatedbybusinesspartner": false,
+      "Islastchangedbybusinesspartner": false,
+      "Customer": "100000000",
+      "Customercontact": "600000001",
+      "Transactioncurrency": "USD",
+      "Grossamountintransaccurrency": 14385.85,
+      "Netamountintransactioncurrency": 12088.95,
+      "Taxamountintransactioncurrency": 2296.90,
+      "Salesorderlifecyclestatus": "C",
+      "Salesorderbillingstatus": "P",
+      "Salesorderdeliverystatus": "D",
+      "Salesorderoverallstatus": "P",
+      "Opportunity": "",
+      "Salesorderpaymentmethod": "",
+      "Salesorderpaymentterms": "",
+      "Billtoparty": "100000000",
+      "Billtopartyrole": "01",
+      "Shiptoparty": "100000000",
+      "Shiptopartyrole": "01"
+    }
+  ]
+}
