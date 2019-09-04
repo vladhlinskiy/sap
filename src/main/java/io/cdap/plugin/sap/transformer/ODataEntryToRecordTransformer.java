@@ -14,17 +14,20 @@
  * the License.
  */
 
-package io.cdap.plugin.sap;
+package io.cdap.plugin.sap.transformer;
 
 import io.cdap.cdap.api.data.format.StructuredRecord;
 import io.cdap.cdap.api.data.format.UnexpectedFormatException;
 import io.cdap.cdap.api.data.schema.Schema;
+import io.cdap.plugin.sap.odata.ODataEntity;
 import org.apache.olingo.odata2.api.edm.EdmLiteralKind;
 import org.apache.olingo.odata2.api.edm.EdmSimpleTypeException;
 import org.apache.olingo.odata2.api.ep.entry.ODataEntry;
 import org.apache.olingo.odata2.core.edm.EdmDateTimeOffset;
 
 import java.math.BigDecimal;
+import java.math.BigInteger;
+import java.math.MathContext;
 import java.time.Instant;
 import java.util.Calendar;
 import java.util.GregorianCalendar;
@@ -34,7 +37,7 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 /**
- * Transforms {@link ODataEntry} to {@link StructuredRecord}.
+ * Transforms {@link ODataEntity} to {@link StructuredRecord}.
  */
 public class ODataEntryToRecordTransformer {
 
@@ -47,16 +50,16 @@ public class ODataEntryToRecordTransformer {
   /**
    * Transforms given {@link ODataEntry} to {@link StructuredRecord}.
    *
-   * @param oDataEntry ODataEntry to be transformed.
-   * @return {@link StructuredRecord} that corresponds to the given {@link ODataEntry}.
+   * @param oDataEntity ODataEntity to be transformed.
+   * @return {@link StructuredRecord} that corresponds to the given {@link ODataEntity}.
    */
-  public StructuredRecord transform(ODataEntry oDataEntry) {
+  public StructuredRecord transform(ODataEntity oDataEntity) {
     StructuredRecord.Builder builder = StructuredRecord.builder(schema);
     for (Schema.Field field : schema.getFields()) {
       Schema nonNullableSchema = field.getSchema().isNullable() ?
         field.getSchema().getNonNullable() : field.getSchema();
       String fieldName = field.getName();
-      Object value = oDataEntry.getProperties().get(fieldName);
+      Object value = oDataEntity.getProperties().get(fieldName);
       builder.set(fieldName, extractValue(fieldName, value, nonNullableSchema));
     }
     return builder.build();
@@ -77,6 +80,7 @@ public class ODataEntryToRecordTransformer {
     Schema.LogicalType fieldLogicalType = schema.getLogicalType();
     if (fieldLogicalType != null) {
       switch (fieldLogicalType) {
+        // TODO test OData 4 client, since it may be possible that there are other Java types
         case TIMESTAMP_MILLIS:
           // Edm.DateTime
           ensureTypeValid(fieldName, value, GregorianCalendar.class);
@@ -94,8 +98,9 @@ public class ODataEntryToRecordTransformer {
           ensureTypeValid(fieldName, value, GregorianCalendar.class);
           return extractTimeMicros((GregorianCalendar) value);
         case DECIMAL:
-          ensureTypeValid(fieldName, value, BigDecimal.class);
-          return extractDecimal(fieldName, (BigDecimal) value, schema);
+          ensureTypeValid(fieldName, value, BigDecimal.class, BigInteger.class, Double.class, Float.class, Byte.class,
+                          Short.class, Integer.class, Long.class);
+          return extractDecimal(fieldName, value, schema);
         default:
           throw new UnexpectedFormatException(String.format("Field '%s' is of unsupported type '%s'", fieldName,
                                                             fieldLogicalType.getToken()));
@@ -110,24 +115,26 @@ public class ODataEntryToRecordTransformer {
         return value;
       case INT:
         // Edm.Byte, Edm.Int16, Edm.Int32, Edm.SByte
-        ensureTypeValid(fieldName, value, Short.class, Byte.class, Integer.class);
+        ensureTypeValid(fieldName, value, Short.class, Byte.class, Integer.class, Long.class, BigInteger.class);
         return ((Number) value).intValue();
       case FLOAT:
         // Edm.Single
-        ensureTypeValid(fieldName, value, Float.class);
-        return value;
+        ensureTypeValid(fieldName, value, Float.class, Double.class, BigDecimal.class, Byte.class, Short.class,
+                        Integer.class, Long.class);
+        return ((Number) value).floatValue();
       case DOUBLE:
         // Edm.Double
-        ensureTypeValid(fieldName, value, Double.class);
-        return value;
+        ensureTypeValid(fieldName, value, Double.class, Float.class, BigDecimal.class, Byte.class, Short.class,
+                        Integer.class, Long.class);
+        return ((Number) value).doubleValue();
       case BYTES:
         // Edm.Binary
         ensureTypeValid(fieldName, value, byte[].class);
         return value;
       case LONG:
         // Edm.Int64
-        ensureTypeValid(fieldName, value, Long.class);
-        return value;
+        ensureTypeValid(fieldName, value, Long.class, Byte.class, Short.class, Integer.class, BigInteger.class);
+        return ((Number) value).longValue();
       case STRING:
         // Edm.String, Edm.Guid, Edm.DateTimeOffset
         ensureTypeValid(fieldName, value, String.class, UUID.class, Calendar.class);
@@ -171,9 +178,10 @@ public class ODataEntryToRecordTransformer {
     return Math.addExact(micros, TimeUnit.NANOSECONDS.toMicros(instant.getNano()));
   }
 
-  private byte[] extractDecimal(String fieldName, BigDecimal decimal, Schema schema) {
+  private byte[] extractDecimal(String fieldName, Object value, Schema schema) {
     int schemaPrecision = schema.getPrecision();
     int schemaScale = schema.getScale();
+    BigDecimal decimal = extractBigDecimal(value, schema);
     if (decimal.precision() > schemaPrecision) {
       throw new UnexpectedFormatException(
         String.format("Field '%s' has precision '%s' which is higher than schema precision '%s'.",
@@ -187,6 +195,29 @@ public class ODataEntryToRecordTransformer {
     }
 
     return decimal.setScale(schemaScale).unscaledValue().toByteArray();
+  }
+
+  private BigDecimal extractBigDecimal(Object value, Schema schema) {
+
+
+    if (value instanceof BigDecimal) {
+
+
+      return (BigDecimal) value;
+    }
+    if (value instanceof BigInteger) {
+      return new BigDecimal((BigInteger) value);
+    }
+    if (value instanceof Double || value instanceof Float) {
+      double doubleValue = ((Number) value).doubleValue();
+      int precision = schema.getPrecision();
+      int scale = schema.getScale();
+      return new BigDecimal(doubleValue, new MathContext(precision)).setScale(scale, BigDecimal.ROUND_HALF_EVEN);
+    }
+
+    // Byte, Short, Integer, Long
+    long longValue = ((Number) value).longValue();
+    return new BigDecimal(longValue);
   }
 
   private void ensureTypeValid(String fieldName, Object value, Class... expectedTypes) {
