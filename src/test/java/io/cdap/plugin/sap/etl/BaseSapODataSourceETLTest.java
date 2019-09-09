@@ -24,7 +24,6 @@ import io.cdap.cdap.datapipeline.DataPipelineApp;
 import io.cdap.cdap.datapipeline.SmartWorkflow;
 import io.cdap.cdap.etl.api.batch.BatchSource;
 import io.cdap.cdap.etl.mock.batch.MockSink;
-import io.cdap.cdap.etl.mock.test.HydratorTestBase;
 import io.cdap.cdap.etl.proto.v2.ETLBatchConfig;
 import io.cdap.cdap.etl.proto.v2.ETLPlugin;
 import io.cdap.cdap.etl.proto.v2.ETLStage;
@@ -40,6 +39,7 @@ import io.cdap.cdap.test.WorkflowManager;
 import io.cdap.plugin.common.Constants;
 import io.cdap.plugin.sap.SapODataConstants;
 import io.cdap.plugin.sap.SapODataSource;
+import io.cdap.plugin.sap.SapODataTestBase;
 import org.apache.olingo.odata2.core.rt.RuntimeDelegateImpl;
 import org.junit.BeforeClass;
 import org.junit.ClassRule;
@@ -54,7 +54,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
-public abstract class BaseSapODataSourceETLTest extends HydratorTestBase {
+public abstract class BaseSapODataSourceETLTest extends SapODataTestBase {
 
   @ClassRule
   public static final TestConfiguration CONFIG = new TestConfiguration("explore.enabled", false);
