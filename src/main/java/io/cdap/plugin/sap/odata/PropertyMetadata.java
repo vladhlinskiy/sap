@@ -21,17 +21,17 @@ import java.util.Map;
 /**
  * OData property metadata.
  */
-public class Property {
+public class PropertyMetadata {
 
-  private String name;
-  private String edmTypeName;
-  private boolean nullable;
-  private Integer precision;
-  private Integer scale;
-  private Map<String, String> annotations;
+  private final String name;
+  private final String edmTypeName;
+  private final boolean nullable;
+  private final Integer precision;
+  private final Integer scale;
+  private final Map<String, String> annotations;
 
-  public Property(String name, String edmTypeName, boolean nullable, Integer precision, Integer scale,
-                  Map<String, String> annotations) {
+  public PropertyMetadata(String name, String edmTypeName, boolean nullable, Integer precision, Integer scale,
+                          Map<String, String> annotations) {
     this.name = name;
     this.edmTypeName = edmTypeName;
     this.nullable = nullable;

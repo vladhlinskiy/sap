@@ -89,7 +89,6 @@ public class SapOData2SourceETLTest extends BaseSapODataSourceETLTest {
 
   @Before
   public void testSetup() throws Exception {
-    // OData2 Service
     wireMockRule.stubFor(WireMock.get(WireMock.urlEqualTo(SERVICE_PATH + "/$metadata"))
                            .willReturn(WireMock.aResponse().withBody(readResourceFile("odata2/metadata.xml"))));
     wireMockRule.stubFor(WireMock.get(WireMock.urlEqualTo(SERVICE_PATH + "/" + ENTITY_SET + "?$format=json"))
@@ -197,6 +196,9 @@ public class SapOData2SourceETLTest extends BaseSapODataSourceETLTest {
 
     List<StructuredRecord> records = getPipelineResults(properties);
     Assert.assertEquals(3, records.size());
+    for (StructuredRecord actualRecord : records) {
+      assertMetadataAnnotationsIncluded(actualRecord);
+    }
   }
 
   @Test
@@ -210,6 +212,9 @@ public class SapOData2SourceETLTest extends BaseSapODataSourceETLTest {
 
     List<StructuredRecord> records = getPipelineResults(properties);
     Assert.assertEquals(3, records.size());
+    for (StructuredRecord actualRecord : records) {
+      assertMetadataAnnotationsIncluded(actualRecord);
+    }
   }
 
   @Test
@@ -223,6 +228,9 @@ public class SapOData2SourceETLTest extends BaseSapODataSourceETLTest {
 
     List<StructuredRecord> records = getPipelineResults(properties);
     Assert.assertEquals(3, records.size());
+    for (StructuredRecord actualRecord : records) {
+      assertMetadataAnnotationsIncluded(actualRecord);
+    }
   }
 
   @Test
@@ -236,6 +244,9 @@ public class SapOData2SourceETLTest extends BaseSapODataSourceETLTest {
 
     List<StructuredRecord> records = getPipelineResults(properties);
     Assert.assertEquals(3, records.size());
+    for (StructuredRecord actualRecord : records) {
+      assertMetadataAnnotationsIncluded(actualRecord);
+    }
   }
 
   @Test
@@ -250,6 +261,9 @@ public class SapOData2SourceETLTest extends BaseSapODataSourceETLTest {
 
     List<StructuredRecord> records = getPipelineResults(properties);
     Assert.assertEquals(3, records.size());
+    for (StructuredRecord actualRecord : records) {
+      assertMetadataAnnotationsIncluded(actualRecord);
+    }
   }
 
   @Test
@@ -264,5 +278,27 @@ public class SapOData2SourceETLTest extends BaseSapODataSourceETLTest {
 
     List<StructuredRecord> records = getPipelineResults(properties);
     Assert.assertEquals(3, records.size());
+    for (StructuredRecord actualRecord : records) {
+      assertMetadataAnnotationsIncluded(actualRecord);
+    }
+  }
+
+  private void assertMetadataAnnotationsIncluded(StructuredRecord actualRecord) {
+    List<Schema.Field> actualFields = actualRecord.getSchema().getFields();
+    Assert.assertNotNull(actualFields);
+    for (Schema.Field actualField : actualFields) {
+      Assert.assertEquals(actualField.getSchema().getType(), Schema.Type.RECORD);
+      StructuredRecord annotatedValueRecord = actualRecord.get(actualField.getName());
+
+      Schema annotatedValueSchema = annotatedValueRecord.getSchema();
+      Schema.Field metadataField = annotatedValueSchema.getField(SapODataConstants.METADATA_ANNOTATIONS_FIELD_NAME);
+      Assert.assertNotNull(metadataField);
+      Assert.assertEquals(metadataField.getSchema().getType(), Schema.Type.RECORD);
+      StructuredRecord annotations = annotatedValueRecord.get(metadataField.getName());
+      Assert.assertEquals("false", annotations.get("creatable"));
+      Assert.assertEquals("false", annotations.get("updatable"));
+      Assert.assertEquals("false", annotations.get("sortable"));
+      Assert.assertEquals("false", annotations.get("filterable"));
+    }
   }
 }

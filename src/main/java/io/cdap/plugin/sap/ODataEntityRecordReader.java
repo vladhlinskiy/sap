@@ -29,7 +29,7 @@ import java.io.IOException;
 import java.util.Iterator;
 
 /**
- * RecordReader implementation, which reads OData v2 entries.
+ * RecordReader implementation, which reads OData entries
  */
 public class ODataEntityRecordReader extends RecordReader<NullWritable, ODataEntity> {
 

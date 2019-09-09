@@ -25,14 +25,12 @@ import java.net.URISyntaxException;
 import java.net.URL;
 import java.util.Iterator;
 import javax.annotation.Nullable;
-import javax.ws.rs.core.MediaType;
 
 /**
  * Abstract OData service client.
  */
 public abstract class ODataClient {
 
-  protected static final String XML_JSON_CONTENT_TYPE = MediaType.APPLICATION_XML + ";" + MediaType.APPLICATION_JSON;
   protected static final String METADATA = "$metadata";
   protected static final String SEPARATOR = "/";
   protected static final String QUERY_SEPARATOR = "?";
@@ -80,9 +78,8 @@ public abstract class ODataClient {
    * @return query URI.
    */
   protected URI getQueryURI(String entitySetName, String query) {
-    String queryUrl = Strings.isNullOrEmpty(query)
-      ? rootUrl + SEPARATOR + entitySetName
-      : rootUrl + SEPARATOR + entitySetName + QUERY_SEPARATOR + query;
+    String entitySetUrl = rootUrl + SEPARATOR + entitySetName;
+    String queryUrl = Strings.isNullOrEmpty(query) ? entitySetUrl : entitySetUrl + QUERY_SEPARATOR + query;
     try {
       URL url = new URL(queryUrl);
       return new URI(url.getProtocol(), url.getUserInfo(), url.getHost(), url.getPort(), url.getPath(), url.getQuery(),

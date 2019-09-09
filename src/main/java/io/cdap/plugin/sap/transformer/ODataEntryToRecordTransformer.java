@@ -19,7 +19,19 @@ package io.cdap.plugin.sap.transformer;
 import io.cdap.cdap.api.data.format.StructuredRecord;
 import io.cdap.cdap.api.data.format.UnexpectedFormatException;
 import io.cdap.cdap.api.data.schema.Schema;
+import io.cdap.plugin.sap.SapODataConstants;
 import io.cdap.plugin.sap.odata.ODataEntity;
+import io.cdap.plugin.sap.odata.StreamProperty;
+import org.apache.olingo.commons.api.edm.EdmPrimitiveTypeException;
+import org.apache.olingo.commons.api.edm.geo.Geospatial;
+import org.apache.olingo.commons.api.edm.geo.GeospatialCollection;
+import org.apache.olingo.commons.api.edm.geo.LineString;
+import org.apache.olingo.commons.api.edm.geo.MultiLineString;
+import org.apache.olingo.commons.api.edm.geo.MultiPoint;
+import org.apache.olingo.commons.api.edm.geo.MultiPolygon;
+import org.apache.olingo.commons.api.edm.geo.Point;
+import org.apache.olingo.commons.api.edm.geo.Polygon;
+import org.apache.olingo.commons.core.edm.primitivetype.EdmDuration;
 import org.apache.olingo.odata2.api.edm.EdmLiteralKind;
 import org.apache.olingo.odata2.api.edm.EdmSimpleTypeException;
 import org.apache.olingo.odata2.api.ep.entry.ODataEntry;
@@ -28,9 +40,14 @@ import org.apache.olingo.odata2.core.edm.EdmDateTimeOffset;
 import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.math.MathContext;
+import java.sql.Timestamp;
 import java.time.Instant;
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Calendar;
 import java.util.GregorianCalendar;
+import java.util.Iterator;
+import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
@@ -80,23 +97,18 @@ public class ODataEntryToRecordTransformer {
     Schema.LogicalType fieldLogicalType = schema.getLogicalType();
     if (fieldLogicalType != null) {
       switch (fieldLogicalType) {
-        // TODO test OData 4 client, since it may be possible that there are other Java types
         case TIMESTAMP_MILLIS:
-          // Edm.DateTime
-          ensureTypeValid(fieldName, value, GregorianCalendar.class);
-          return extractTimestampMillis((GregorianCalendar) value);
+          ensureTypeValid(fieldName, value, Calendar.class, Timestamp.class);
+          return extractTimestampMillis(value);
         case TIMESTAMP_MICROS:
-          // Edm.DateTime
-          ensureTypeValid(fieldName, value, GregorianCalendar.class);
-          return extractTimestampMicros((GregorianCalendar) value);
+          ensureTypeValid(fieldName, value, Calendar.class, Timestamp.class);
+          return extractTimestampMicros(value);
         case TIME_MILLIS:
-          // Edm.Time
-          ensureTypeValid(fieldName, value, GregorianCalendar.class);
-          return extractTimeMillis((GregorianCalendar) value);
+          ensureTypeValid(fieldName, value, GregorianCalendar.class, Timestamp.class);
+          return extractTimeMillis(value);
         case TIME_MICROS:
-          // Edm.Time
-          ensureTypeValid(fieldName, value, GregorianCalendar.class);
-          return extractTimeMicros((GregorianCalendar) value);
+          ensureTypeValid(fieldName, value, GregorianCalendar.class, Timestamp.class);
+          return extractTimeMicros(value);
         case DECIMAL:
           ensureTypeValid(fieldName, value, BigDecimal.class, BigInteger.class, Double.class, Float.class, Byte.class,
                           Short.class, Integer.class, Long.class);
@@ -110,70 +122,244 @@ public class ODataEntryToRecordTransformer {
     Schema.Type fieldType = schema.getType();
     switch (fieldType) {
       case BOOLEAN:
-        // Edm.Boolean
         ensureTypeValid(fieldName, value, Boolean.class);
         return value;
       case INT:
-        // Edm.Byte, Edm.Int16, Edm.Int32, Edm.SByte
         ensureTypeValid(fieldName, value, Short.class, Byte.class, Integer.class, Long.class, BigInteger.class);
         return ((Number) value).intValue();
       case FLOAT:
-        // Edm.Single
         ensureTypeValid(fieldName, value, Float.class, Double.class, BigDecimal.class, Byte.class, Short.class,
                         Integer.class, Long.class);
         return ((Number) value).floatValue();
       case DOUBLE:
-        // Edm.Double
         ensureTypeValid(fieldName, value, Double.class, Float.class, BigDecimal.class, Byte.class, Short.class,
                         Integer.class, Long.class);
         return ((Number) value).doubleValue();
       case BYTES:
-        // Edm.Binary
         ensureTypeValid(fieldName, value, byte[].class);
         return value;
       case LONG:
-        // Edm.Int64
         ensureTypeValid(fieldName, value, Long.class, Byte.class, Short.class, Integer.class, BigInteger.class);
         return ((Number) value).longValue();
       case STRING:
-        // Edm.String, Edm.Guid, Edm.DateTimeOffset
-        ensureTypeValid(fieldName, value, String.class, UUID.class, Calendar.class);
-        if (value instanceof Calendar) {
-          return extractDateTimeOffset(fieldName, (Calendar) value);
+        ensureTypeValid(fieldName, value, String.class, UUID.class, Calendar.class, Timestamp.class, BigDecimal.class);
+        if (value instanceof Calendar || value instanceof Timestamp) {
+          return extractDateTimeOffset(fieldName, value);
+        }
+        if (value instanceof BigDecimal) {
+          return extractDuration(fieldName, (BigDecimal) value);
         }
         return value.toString();
+      case RECORD:
+        ensureTypeValid(fieldName, value, Geospatial.class, StreamProperty.class);
+        if (value instanceof StreamProperty) {
+          return extractStream((StreamProperty) value, schema);
+        }
+        return extractGeospatial(fieldName, (Geospatial) value, schema);
       default:
         throw new UnexpectedFormatException(String.format("Field '%s' is of unsupported type '%s'", fieldName,
                                                           fieldType.name().toLowerCase()));
     }
   }
 
-  private String extractDateTimeOffset(String fieldName, Calendar value) {
-    try {
-      return EdmDateTimeOffset.getInstance().valueToString(value, EdmLiteralKind.DEFAULT, null);
-    } catch (EdmSimpleTypeException e) {
-      throw new UnexpectedFormatException(String.format("Unsupported value for '%s' field: '%s'", fieldName, value));
+  private StructuredRecord extractStream(StreamProperty streamProperty, Schema schema) {
+    return StructuredRecord.builder(schema)
+      .set(SapODataConstants.STREAM_ETAG_FIELD_NAME, streamProperty.getMediaEtag())
+      .set(SapODataConstants.STREAM_CONTENT_TYPE_FIELD_NAME, streamProperty.getMediaContentType())
+      .set(SapODataConstants.STREAM_READ_LINK_FIELD_NAME, streamProperty.getMediaReadLink())
+      .set(SapODataConstants.STREAM_EDIT_LINK_FIELD_NAME, streamProperty.getMediaEditLink())
+      .build();
+  }
+
+  private StructuredRecord extractGeospatial(String fieldName, Geospatial geospatial, Schema schema) {
+    Geospatial.Type geoType = geospatial.getGeoType();
+    switch (geoType) {
+      case POINT:
+        return geospatialRecordOf("Point", extractCoordinates((Point) geospatial), schema);
+      case LINESTRING:
+        return geospatialRecordOf("LineString", extractCoordinates((LineString) geospatial), schema);
+      case POLYGON:
+        return geospatialRecordOf("Polygon", extractCoordinates((Polygon) geospatial), schema);
+      case MULTIPOINT:
+        return geospatialRecordOf("MultiPoint", extractCoordinates((MultiPoint) geospatial), schema);
+      case MULTILINESTRING:
+        return geospatialRecordOf("MultiLineString", extractCoordinates((MultiLineString) geospatial), schema);
+      case MULTIPOLYGON:
+        return geospatialRecordOf("MultiPolygon", extractCoordinates((MultiPolygon) geospatial), schema);
+      case GEOSPATIALCOLLECTION:
+        return extractGeospatialCollectionRecord(fieldName, (GeospatialCollection) geospatial, schema);
+      default:
+        // this should never happen
+        throw new UnexpectedFormatException(String.format("Field '%s' is of unsupported geospatial type '%s'.",
+                                                          fieldName, geoType));
     }
   }
 
-  private int extractTimeMillis(GregorianCalendar value) {
-    long nanos = value.toZonedDateTime().toLocalTime().toNanoOfDay();
+  private StructuredRecord extractGeospatialCollectionRecord(String fieldName, GeospatialCollection collection,
+                                                             Schema schema) {
+    List<StructuredRecord> points = new ArrayList<>();
+    List<StructuredRecord> lineStrings = new ArrayList<>();
+    List<StructuredRecord> polygons = new ArrayList<>();
+    List<StructuredRecord> multiPoints = new ArrayList<>();
+    List<StructuredRecord> multiLineStrings = new ArrayList<>();
+    List<StructuredRecord> multiPolygons = new ArrayList<>();
+    collection.iterator().forEachRemaining(g -> {
+      switch (g.getGeoType()) {
+        case POINT:
+          Schema pointSchema = schema.getField("points").getSchema().getComponentSchema();
+          points.add(extractGeospatial(fieldName, g, pointSchema));
+          break;
+        case LINESTRING:
+          Schema lineStringSchema = schema.getField("lineStrings").getSchema().getComponentSchema();
+          lineStrings.add(extractGeospatial(fieldName, g, lineStringSchema));
+          break;
+        case POLYGON:
+          Schema polygonSchema = schema.getField("polygons").getSchema().getComponentSchema();
+          polygons.add(extractGeospatial(fieldName, g, polygonSchema));
+          break;
+        case MULTIPOINT:
+          Schema multiPointSchema = schema.getField("multiPoints").getSchema().getComponentSchema();
+          multiPoints.add(extractGeospatial(fieldName, g, multiPointSchema));
+          break;
+        case MULTILINESTRING:
+          Schema multiLineStringSchema = schema.getField("multiLineStrings").getSchema().getComponentSchema();
+          multiLineStrings.add(extractGeospatial(fieldName, g, multiLineStringSchema));
+          break;
+        case MULTIPOLYGON:
+          Schema multiPolygonSchema = schema.getField("multiPolygons").getSchema().getComponentSchema();
+          multiPolygons.add(extractGeospatial(fieldName, g, multiPolygonSchema));
+          break;
+      }
+    });
+
+    return StructuredRecord.builder(schema)
+      .set(SapODataConstants.GEOSPATIAL_TYPE_FIELD_NAME, "GeometryCollection")
+      .set(SapODataConstants.GEO_COLLECTION_POINTS_FIELD_NAME, points)
+      .set(SapODataConstants.GEO_COLLECTION_LINE_STRINGS_FIELD_NAME, lineStrings)
+      .set(SapODataConstants.GEO_COLLECTION_POLYGONS_FIELD_NAME, polygons)
+      .set(SapODataConstants.GEO_COLLECTION_MULTI_POINTS_FIELD_NAME, multiPoints)
+      .set(SapODataConstants.GEO_COLLECTION_MULTI_LINE_STRINGS_FIELD_NAME, multiLineStrings)
+      .set(SapODataConstants.GEO_COLLECTION_MULTI_POLYGONS_FIELD_NAME, multiPolygons)
+      .build();
+  }
+
+  private StructuredRecord geospatialRecordOf(String typeName, List coordinates, Schema schema) {
+    return StructuredRecord.builder(schema)
+      .set(SapODataConstants.GEOSPATIAL_TYPE_FIELD_NAME, typeName)
+      .set(SapODataConstants.GEOSPATIAL_COORDINATES_FIELD_NAME, coordinates)
+      .build();
+  }
+
+  private List<Double> extractCoordinates(Point point) {
+    return Arrays.asList(point.getX(), point.getY());
+  }
+
+  private List<List<Double>> extractCoordinates(LineString lineString) {
+    List<List<Double>> coordinates = new ArrayList<>();
+    Iterator<Point> pointIterator = lineString.iterator();
+    if (pointIterator == null) {
+      return coordinates;
+    }
+    pointIterator.forEachRemaining(p -> coordinates.add(extractCoordinates(p)));
+
+    return coordinates;
+  }
+
+  private List<List<List<Double>>> extractCoordinates(Polygon polygon) {
+    List<List<List<Double>>> coordinates = new ArrayList<>();
+    if (polygon.getExterior() != null && polygon.getExterior().iterator() != null) {
+      List<List<Double>> exteriorCoordinates = new ArrayList<>();
+      polygon.getExterior().iterator().forEachRemaining(p -> exteriorCoordinates.add(extractCoordinates(p)));
+      coordinates.add(exteriorCoordinates);
+    }
+
+    for (int i = 0; i < polygon.getNumberOfInteriorRings(); i++) {
+      Iterator<Point> interiorIterator = polygon.getInterior(i).iterator();
+      if (interiorIterator == null) {
+        continue;
+      }
+      List<List<Double>> interiorCoordinates = new ArrayList<>();
+      interiorIterator.forEachRemaining(p -> interiorCoordinates.add(extractCoordinates(p)));
+      coordinates.add(interiorCoordinates);
+    }
+
+    return coordinates;
+  }
+
+  private List<List<Double>> extractCoordinates(MultiPoint multiPoint) {
+    List<List<Double>> coordinates = new ArrayList<>();
+    Iterator<Point> pointIterator = multiPoint.iterator();
+    if (pointIterator == null) {
+      return coordinates;
+    }
+    pointIterator.forEachRemaining(p -> coordinates.add(extractCoordinates(p)));
+
+    return coordinates;
+  }
+
+  private List<List<List<Double>>> extractCoordinates(MultiLineString multiLineString) {
+    List<List<List<Double>>> coordinates = new ArrayList<>();
+    Iterator<LineString> lineStringIterator = multiLineString.iterator();
+    if (lineStringIterator == null) {
+      return coordinates;
+    }
+    lineStringIterator.forEachRemaining(ls -> coordinates.add(extractCoordinates(ls)));
+
+    return coordinates;
+  }
+
+  private List<List<List<List<Double>>>> extractCoordinates(MultiPolygon multiPolygon) {
+    List<List<List<List<Double>>>> coordinates = new ArrayList<>();
+    Iterator<Polygon> polygonIterator = multiPolygon.iterator();
+    if (polygonIterator == null) {
+      return coordinates;
+    }
+    polygonIterator.forEachRemaining(polygon -> coordinates.add(extractCoordinates(polygon)));
+
+    return coordinates;
+  }
+
+  private String extractDateTimeOffset(String fieldName, Object value) {
+    try {
+      return EdmDateTimeOffset.getInstance().valueToString(value, EdmLiteralKind.DEFAULT, null);
+    } catch (EdmSimpleTypeException e) {
+      throw new UnexpectedFormatException(String.format("Unsupported value for '%s' field: '%s'", fieldName, value), e);
+    }
+  }
+
+  private String extractDuration(String fieldName, BigDecimal decimal) {
+    try {
+      int precision = decimal.precision();
+      int scale = decimal.scale();
+      return EdmDuration.getInstance().valueToString(decimal, true, null, precision, scale, true);
+    } catch (EdmPrimitiveTypeException e) {
+      String errorMessage = String.format("Unsupported value for '%s' field: '%s'", fieldName, decimal);
+      throw new UnexpectedFormatException(errorMessage, e);
+    }
+  }
+
+  private int extractTimeMillis(Object value) {
+    long nanos = value instanceof GregorianCalendar
+      ? ((GregorianCalendar) value).toZonedDateTime().toLocalTime().toNanoOfDay()
+      : ((Timestamp) value).toLocalDateTime().toLocalTime().toNanoOfDay();
     return Math.toIntExact(TimeUnit.NANOSECONDS.toMillis(nanos));
   }
 
-  private long extractTimeMicros(GregorianCalendar value) {
-    long nanos = value.toZonedDateTime().toLocalTime().toNanoOfDay();
+  private long extractTimeMicros(Object value) {
+    long nanos = value instanceof GregorianCalendar
+      ? ((GregorianCalendar) value).toZonedDateTime().toLocalTime().toNanoOfDay()
+      : ((Timestamp) value).toLocalDateTime().toLocalTime().toNanoOfDay();
     return TimeUnit.NANOSECONDS.toMicros(nanos);
   }
 
-  private long extractTimestampMillis(Calendar value) {
-    Instant instant = value.toInstant();
+  private long extractTimestampMillis(Object value) {
+    Instant instant = value instanceof Calendar ? ((Calendar) value).toInstant() : ((Timestamp) value).toInstant();
     long millis = TimeUnit.SECONDS.toMillis(instant.getEpochSecond());
     return Math.addExact(millis, TimeUnit.NANOSECONDS.toMillis(instant.getNano()));
   }
 
-  private long extractTimestampMicros(Calendar value) {
-    Instant instant = value.toInstant();
+  private long extractTimestampMicros(Object value) {
+    Instant instant = value instanceof Calendar ? ((Calendar) value).toInstant() : ((Timestamp) value).toInstant();
     long micros = TimeUnit.SECONDS.toMicros(instant.getEpochSecond());
     return Math.addExact(micros, TimeUnit.NANOSECONDS.toMicros(instant.getNano()));
   }
@@ -198,11 +384,7 @@ public class ODataEntryToRecordTransformer {
   }
 
   private BigDecimal extractBigDecimal(Object value, Schema schema) {
-
-
     if (value instanceof BigDecimal) {
-
-
       return (BigDecimal) value;
     }
     if (value instanceof BigInteger) {
@@ -231,7 +413,7 @@ public class ODataEntryToRecordTransformer {
       .map(Class::getName)
       .collect(Collectors.joining(", "));
     throw new UnexpectedFormatException(
-      String.format("Document field '%s' is expected to be of type '%s', but found a '%s'.", fieldName,
+      String.format("SAP field '%s' is expected to be of type '%s', but found a '%s'.", fieldName,
                     expectedTypeNames, value.getClass().getSimpleName()));
   }
 }

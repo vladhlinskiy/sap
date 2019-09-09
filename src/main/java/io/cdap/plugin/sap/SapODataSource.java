@@ -35,7 +35,7 @@ import io.cdap.plugin.common.LineageRecorder;
 import io.cdap.plugin.sap.odata.EntityType;
 import io.cdap.plugin.sap.odata.GenericODataClient;
 import io.cdap.plugin.sap.odata.ODataEntity;
-import io.cdap.plugin.sap.odata.Property;
+import io.cdap.plugin.sap.odata.PropertyMetadata;
 import io.cdap.plugin.sap.odata.exception.ODataException;
 import io.cdap.plugin.sap.transformer.ODataEntryToRecordTransformer;
 import io.cdap.plugin.sap.transformer.ODataEntryToRecordWithMetadataTransformer;
@@ -133,7 +133,7 @@ public class SapODataSource extends BatchSource<NullWritable, ODataEntity, Struc
       EntityType entityType = oDataClient.getEntitySetType(config.getResourcePath());
       List<Schema.Field> fields = entityType.getProperties().stream()
         .filter(p -> config.getSelectProperties().isEmpty() || config.getSelectProperties().contains(p.getName()))
-        .map(property -> getSchemaField(property, config.isIncludeMetadataAnnotations()))
+        .map(propertyMetadata -> getSchemaField(propertyMetadata, config.isIncludeMetadataAnnotations()))
         .collect(Collectors.toList());
       return Schema.recordOf("output", fields);
     } catch (ODataException e) {
@@ -148,38 +148,38 @@ public class SapODataSource extends BatchSource<NullWritable, ODataEntity, Struc
       EntityType entityType = oDataClient.getEntitySetType(config.getResourcePath());
       return entityType.getProperties().stream()
         .filter(p -> config.getSelectProperties().isEmpty() || config.getSelectProperties().contains(p.getName()))
-        .collect(Collectors.toMap(Property::getName, Property::getAnnotations));
+        .collect(Collectors.toMap(PropertyMetadata::getName, PropertyMetadata::getAnnotations));
     } catch (ODataException e) {
       throw new InvalidStageException("Unable to get metadata annotations for the entity type: " + e.getMessage(), e);
     }
   }
 
-  private Schema.Field getSchemaField(Property property, boolean includeAnnotations) {
-    Schema nonNullableSchema = convertPropertyType(property);
-    Schema schema = property.isNullable() ? Schema.nullableOf(nonNullableSchema) : nonNullableSchema;
+  private Schema.Field getSchemaField(PropertyMetadata propertyMetadata, boolean includeAnnotations) {
+    Schema nonNullableSchema = convertPropertyType(propertyMetadata);
+    Schema schema = propertyMetadata.isNullable() ? Schema.nullableOf(nonNullableSchema) : nonNullableSchema;
 
-    return includeAnnotations && property.getAnnotations() != null ?
-      getFieldWithAnnotations(property, schema) : Schema.Field.of(property.getName(), schema);
+    return includeAnnotations && propertyMetadata.getAnnotations() != null ?
+      getFieldWithAnnotations(propertyMetadata, schema) : Schema.Field.of(propertyMetadata.getName(), schema);
   }
 
-  private Schema.Field getFieldWithAnnotations(Property property, Schema valueSchema) {
-    Map<String, String> annotations = property.getAnnotations();
+  private Schema.Field getFieldWithAnnotations(PropertyMetadata propertyMetadata, Schema valueSchema) {
+    Map<String, String> annotations = propertyMetadata.getAnnotations();
     List<Schema.Field> fields = annotations.keySet().stream()
       .map(name -> Schema.Field.of(name, Schema.of(Schema.Type.STRING)))
       .collect(Collectors.toList());
 
+    String propertyName = propertyMetadata.getName();
     Schema.Field metadataFiled = Schema.Field.of(SapODataConstants.METADATA_ANNOTATIONS_FIELD_NAME,
-                                                 Schema.recordOf(property.getName() + "-metadata-record", fields));
+                                                 Schema.recordOf(propertyName + "-metadata-record", fields));
 
-    Schema valueWithMetadataSchema = Schema.recordOf(property.getName() + "-value-with-metadata-record",
+    Schema valueWithMetadataSchema = Schema.recordOf(propertyName + "-value-with-metadata-record",
                                                      Schema.Field.of(SapODataConstants.VALUE_FIELD_NAME, valueSchema),
                                                      metadataFiled);
-    return Schema.Field.of(property.getName(), valueWithMetadataSchema);
+    return Schema.Field.of(propertyName, valueWithMetadataSchema);
   }
 
-  // TODO add OData 4 data types
-  private Schema convertPropertyType(Property property) {
-    switch (property.getEdmTypeName()) {
+  private Schema convertPropertyType(PropertyMetadata propertyMetadata) {
+    switch (propertyMetadata.getEdmTypeName()) {
       case "Binary":
         return Schema.of(Schema.Type.BYTES);
       case "Boolean":
@@ -196,7 +196,7 @@ public class SapODataSource extends BatchSource<NullWritable, ODataEntity, Struc
       case "Time":
         return Schema.of(Schema.LogicalType.TIME_MICROS);
       case "Decimal":
-        return Schema.decimalOf(property.getPrecision(), property.getScale());
+        return Schema.decimalOf(propertyMetadata.getPrecision(), propertyMetadata.getScale());
       case "Double":
         return Schema.of(Schema.Type.DOUBLE);
       case "Single":
@@ -211,10 +211,116 @@ public class SapODataSource extends BatchSource<NullWritable, ODataEntity, Struc
         return Schema.of(Schema.Type.LONG);
       case "String":
         return Schema.of(Schema.Type.STRING);
+      case "GeographyPoint":
+      case "GeometryPoint":
+        return pointSchema(propertyMetadata);
+      case "GeographyLineString":
+      case "GeometryLineString":
+        return lineStringSchema(propertyMetadata);
+      case "GeographyPolygon":
+      case "GeometryPolygon":
+        return polygonSchema(propertyMetadata);
+      case "GeographyMultiPoint":
+      case "GeometryMultiPoint":
+        return multiPointSchema(propertyMetadata);
+      case "GeographyMultiLineString":
+      case "GeometryMultiLineString":
+        return multiLineStringSchema(propertyMetadata);
+      case "GeographyMultiPolygon":
+      case "GeometryMultiPolygon":
+        return multiPolygonSchema(propertyMetadata);
+      case "GeographyCollection":
+      case "GeometryCollection":
+        return collectionSchema(propertyMetadata);
+      case "Date":
+        return Schema.of(Schema.LogicalType.TIMESTAMP_MICROS);
+      case "Duration":
+        return Schema.of(Schema.Type.STRING);
+      case "Stream":
+        return streamSchema(propertyMetadata);
+      case "TimeOfDay":
+        return Schema.of(Schema.LogicalType.TIME_MICROS);
       default:
         // this should never happen
-        throw new InvalidStageException(String.format("Field '%s' is of unsupported type '%s'.", property.getName(),
-                                                      property.getEdmTypeName()));
+        throw new InvalidStageException(String.format("Field '%s' is of unsupported type '%s'.",
+                                                      propertyMetadata.getName(), propertyMetadata.getEdmTypeName()));
     }
+  }
+
+  private Schema streamSchema(PropertyMetadata propertyMetadata) {
+    return Schema.recordOf(propertyMetadata.getName() + "-stream-record",
+                           Schema.Field.of(SapODataConstants.STREAM_ETAG_FIELD_NAME,
+                                           Schema.nullableOf(Schema.of(Schema.Type.STRING))),
+                           Schema.Field.of(SapODataConstants.STREAM_CONTENT_TYPE_FIELD_NAME,
+                                           Schema.nullableOf(Schema.of(Schema.Type.STRING))),
+                           Schema.Field.of(SapODataConstants.STREAM_READ_LINK_FIELD_NAME,
+                                           Schema.nullableOf(Schema.of(Schema.Type.STRING))),
+                           Schema.Field.of(SapODataConstants.STREAM_EDIT_LINK_FIELD_NAME,
+                                           Schema.nullableOf(Schema.of(Schema.Type.STRING))));
+  }
+
+  private Schema pointSchema(PropertyMetadata propertyMetadata) {
+    return Schema.recordOf(propertyMetadata.getName() + "-point-record",
+                           Schema.Field.of(SapODataConstants.GEOSPATIAL_TYPE_FIELD_NAME, Schema.of(Schema.Type.STRING)),
+                           Schema.Field.of(SapODataConstants.GEOSPATIAL_COORDINATES_FIELD_NAME,
+                                           Schema.arrayOf(Schema.of(Schema.Type.DOUBLE))));
+  }
+
+  private Schema lineStringSchema(PropertyMetadata propertyMetadata) {
+    return Schema.recordOf(propertyMetadata.getName() + "-line-string-record",
+                           Schema.Field.of(SapODataConstants.GEOSPATIAL_TYPE_FIELD_NAME, Schema.of(Schema.Type.STRING)),
+                           Schema.Field.of(SapODataConstants.GEOSPATIAL_COORDINATES_FIELD_NAME,
+                                           Schema.arrayOf(Schema.arrayOf(Schema.of(Schema.Type.DOUBLE)))));
+  }
+
+  private Schema polygonSchema(PropertyMetadata propertyMetadata) {
+    return Schema.recordOf(
+      propertyMetadata.getName() + "-polygon-record",
+      Schema.Field.of(SapODataConstants.GEOSPATIAL_TYPE_FIELD_NAME, Schema.of(Schema.Type.STRING)),
+      Schema.Field.of(SapODataConstants.GEOSPATIAL_COORDINATES_FIELD_NAME,
+                      Schema.arrayOf(Schema.arrayOf(Schema.arrayOf(Schema.of(Schema.Type.DOUBLE))))));
+  }
+
+  private Schema multiPointSchema(PropertyMetadata propertyMetadata) {
+    return Schema.recordOf(
+      propertyMetadata.getName() + "-multi-point-record",
+      Schema.Field.of(SapODataConstants.GEOSPATIAL_TYPE_FIELD_NAME, Schema.of(Schema.Type.STRING)),
+      Schema.Field.of(SapODataConstants.GEOSPATIAL_COORDINATES_FIELD_NAME,
+                      Schema.arrayOf(Schema.arrayOf(Schema.of(Schema.Type.DOUBLE)))));
+  }
+
+  private Schema multiLineStringSchema(PropertyMetadata propertyMetadata) {
+    return Schema.recordOf(
+      propertyMetadata.getName() + "-multi-line-string-record",
+      Schema.Field.of(SapODataConstants.GEOSPATIAL_TYPE_FIELD_NAME, Schema.of(Schema.Type.STRING)),
+      Schema.Field.of(SapODataConstants.GEOSPATIAL_COORDINATES_FIELD_NAME,
+                      Schema.arrayOf(Schema.arrayOf(Schema.arrayOf(Schema.of(Schema.Type.DOUBLE))))));
+  }
+
+  private Schema multiPolygonSchema(PropertyMetadata propertyMetadata) {
+    return Schema.recordOf(
+      propertyMetadata.getName() + "-multi-polygon-record",
+      Schema.Field.of(SapODataConstants.GEOSPATIAL_TYPE_FIELD_NAME, Schema.of(Schema.Type.STRING)),
+      Schema.Field.of(SapODataConstants.GEOSPATIAL_COORDINATES_FIELD_NAME,
+                      Schema.arrayOf(Schema.arrayOf(Schema.arrayOf(Schema.arrayOf(Schema.of(Schema.Type.DOUBLE)))))));
+  }
+
+  private Schema collectionSchema(PropertyMetadata propertyMetadata) {
+    return Schema.recordOf(propertyMetadata.getName() + "-collection-record",
+                           Schema.Field.of(SapODataConstants.GEOSPATIAL_TYPE_FIELD_NAME, Schema.of(Schema.Type.STRING)),
+                           Schema.Field.of(SapODataConstants.GEO_COLLECTION_POINTS_FIELD_NAME,
+                                           Schema.arrayOf(pointSchema(propertyMetadata))),
+                           Schema.Field.of(SapODataConstants.GEO_COLLECTION_LINE_STRINGS_FIELD_NAME,
+                                           Schema.arrayOf(lineStringSchema(propertyMetadata))),
+                           Schema.Field.of(SapODataConstants.GEO_COLLECTION_POLYGONS_FIELD_NAME,
+                                           Schema.arrayOf(polygonSchema(propertyMetadata))),
+                           Schema.Field.of(SapODataConstants.GEO_COLLECTION_MULTI_POINTS_FIELD_NAME,
+                                           Schema.arrayOf(multiPointSchema(propertyMetadata))),
+                           Schema.Field.of(SapODataConstants.GEO_COLLECTION_MULTI_LINE_STRINGS_FIELD_NAME,
+                                           Schema.arrayOf(multiLineStringSchema(propertyMetadata))),
+                           Schema.Field.of(SapODataConstants.GEO_COLLECTION_MULTI_POLYGONS_FIELD_NAME,
+                                           Schema.arrayOf(multiPolygonSchema(propertyMetadata)))
+                           // nested collections can not be supported since metadata does not contain component info
+    );
   }
 }

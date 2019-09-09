@@ -23,10 +23,10 @@ import java.util.List;
  */
 public class EntityType {
 
-  private String name;
-  private List<Property> properties;
+  private final String name;
+  private final List<PropertyMetadata> properties;
 
-  public EntityType(String name, List<Property> properties) {
+  public EntityType(String name, List<PropertyMetadata> properties) {
     this.name = name;
     this.properties = properties;
   }
@@ -35,7 +35,7 @@ public class EntityType {
     return name;
   }
 
-  public List<Property> getProperties() {
+  public List<PropertyMetadata> getProperties() {
     return properties;
   }
 }

@@ -19,6 +19,7 @@ import com.github.tomakehurst.wiremock.client.ResponseDefinitionBuilder;
 import com.github.tomakehurst.wiremock.client.WireMock;
 import com.google.common.collect.ImmutableMap;
 import io.cdap.cdap.api.data.format.StructuredRecord;
+import io.cdap.cdap.api.data.schema.Schema;
 import io.cdap.plugin.sap.SapODataConstants;
 import org.junit.Assert;
 import org.junit.Before;
@@ -32,16 +33,58 @@ import javax.ws.rs.core.MediaType;
 public class SapOData4SourceETLTest extends BaseSapODataSourceETLTest {
 
   private static final String SERVICE_PATH = "/sap/opu/odata/SAP/ZGW100_XX_S2_SRV";
-  private static final String ENTITY_SET = "SalesOrder";
+  private static final String ENTITY_SET = "AllDataTypes";
+
+  private static final Schema SCHEMA = Schema.recordOf(
+    "schema",
+    Schema.Field.of("Binary", Schema.of(Schema.Type.BYTES)),
+    Schema.Field.of("Boolean", Schema.of(Schema.Type.BOOLEAN)),
+    Schema.Field.of("Byte", Schema.of(Schema.Type.INT)),
+    Schema.Field.of("Date", Schema.of(Schema.LogicalType.TIMESTAMP_MICROS)),
+    Schema.Field.of("DateTimeOffset", Schema.of(Schema.Type.STRING)),
+    Schema.Field.of("Decimal", Schema.decimalOf(16, 3)),
+    Schema.Field.of("Double", Schema.of(Schema.Type.DOUBLE)),
+    Schema.Field.of("Duration", Schema.of(Schema.Type.STRING)),
+    Schema.Field.of("Guid", Schema.of(Schema.Type.STRING)),
+    Schema.Field.of("Int16", Schema.of(Schema.Type.INT)),
+    Schema.Field.of("Int32", Schema.of(Schema.Type.INT)),
+    Schema.Field.of("Int64", Schema.of(Schema.Type.LONG)),
+    Schema.Field.of("SByte", Schema.of(Schema.Type.INT)),
+    Schema.Field.of("Stream", streamSchema("Stream")),
+    Schema.Field.of("Single", Schema.of(Schema.Type.FLOAT)),
+    Schema.Field.of("String", Schema.of(Schema.Type.STRING)),
+    Schema.Field.of("TimeOfDay", Schema.of(Schema.LogicalType.TIME_MICROS)),
+    Schema.Field.of("GeographyPoint", pointSchema("GeographyPoint")),
+    Schema.Field.of("GeographyLineString", lineStringSchema("GeographyLineString")),
+    Schema.Field.of("GeographyPolygon", polygonSchema("GeographyPolygon")),
+    Schema.Field.of("GeographyMultiPoint", multiPointSchema("GeographyMultiPoint")),
+    Schema.Field.of("GeographyMultiLineString", multiLineStringSchema("GeographyMultiLineString")),
+    Schema.Field.of("GeographyMultiPolygon", multiPolygonSchema("GeographyMultiPolygon")),
+    Schema.Field.of("GeographyCollection", collectionSchema("GeographyCollection")),
+    Schema.Field.of("GeometryPoint", pointSchema("GeometryPoint")),
+    Schema.Field.of("GeometryLineString", lineStringSchema("GeometryLineString")),
+    Schema.Field.of("GeometryPolygon", polygonSchema("GeometryPolygon")),
+    Schema.Field.of("GeometryMultiPoint", multiPointSchema("GeometryMultiPoint")),
+    Schema.Field.of("GeometryMultiLineString", multiLineStringSchema("GeometryMultiLineString")),
+    Schema.Field.of("GeometryMultiPolygon", multiPolygonSchema("GeometryMultiPolygon")),
+    Schema.Field.of("GeometryCollection", collectionSchema("GeometryCollection"))
+  );
 
   @Before
   public void testSetup() throws Exception {
-    // OData2 Service
     wireMockRule.stubFor(WireMock.get(WireMock.urlEqualTo(SERVICE_PATH + "/$metadata"))
                            .willReturn(WireMock.aResponse().withBody(readResourceFile("odata4/metadata.xml"))));
+    wireMockRule.stubFor(WireMock.get(WireMock.urlEqualTo(SERVICE_PATH + "/$metadata#AllDataTypes"))
+                           .willReturn(WireMock.aResponse().withBody(readResourceFile("odata4/metadata.xml"))));
+
+    wireMockRule.stubFor(WireMock.get(WireMock.urlEqualTo(SERVICE_PATH + "/" + ENTITY_SET + "?$format=xml"))
+                           .willReturn(WireMock.aResponse()
+                                         .withHeader(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_ATOM_XML)
+                                         .withBody(readResourceFile("odata4/AllDataTypes.xml"))));
+
     ResponseDefinitionBuilder jsonResponse = WireMock.aResponse()
       .withHeader(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON)
-      .withBody(readResourceFile("odata4/SalesOrder.json"));
+      .withBody(readResourceFile("odata4/AllDataTypes.json"));
     wireMockRule.stubFor(WireMock.get(WireMock.urlEqualTo(SERVICE_PATH + "/" + ENTITY_SET + "?$format=json"))
                            .willReturn(jsonResponse));
 
@@ -58,7 +101,7 @@ public class SapOData4SourceETLTest extends BaseSapODataSourceETLTest {
       .build();
 
     List<StructuredRecord> records = getPipelineResults(properties);
-    Assert.assertEquals(1, records.size());
+    Assert.assertEquals(2, records.size());
   }
 
   @Test
@@ -71,6 +114,60 @@ public class SapOData4SourceETLTest extends BaseSapODataSourceETLTest {
       .build();
 
     List<StructuredRecord> records = getPipelineResults(properties);
-    Assert.assertEquals(1, records.size());
+    Assert.assertEquals(2, records.size());
+  }
+
+  @Test
+  public void testSourceXml() throws Exception {
+    Map<String, String> properties = new ImmutableMap.Builder<String, String>()
+      .put(SapODataConstants.ODATA_SERVICE_URL, getServerAddress() + SERVICE_PATH)
+      .put(SapODataConstants.INCLUDE_METADATA_ANNOTATIONS, "false")
+      .put(SapODataConstants.RESOURCE_PATH, ENTITY_SET)
+      .put(SapODataConstants.QUERY, "$format=xml")
+      .build();
+
+    List<StructuredRecord> records = getPipelineResults(properties);
+    Assert.assertEquals(2, records.size());
+  }
+
+  @Test
+  public void testSourceWithSchemaSet() throws Exception {
+    Map<String, String> properties = new ImmutableMap.Builder<String, String>()
+      .put(SapODataConstants.ODATA_SERVICE_URL, getServerAddress() + SERVICE_PATH)
+      .put(SapODataConstants.INCLUDE_METADATA_ANNOTATIONS, "false")
+      .put(SapODataConstants.RESOURCE_PATH, ENTITY_SET)
+      .put(SapODataConstants.SCHEMA, SCHEMA.toString())
+      .build();
+
+    List<StructuredRecord> records = getPipelineResults(properties);
+    Assert.assertEquals(2, records.size());
+  }
+
+  @Test
+  public void testSourceJsonWithSchemaSet() throws Exception {
+    Map<String, String> properties = new ImmutableMap.Builder<String, String>()
+      .put(SapODataConstants.ODATA_SERVICE_URL, getServerAddress() + SERVICE_PATH)
+      .put(SapODataConstants.INCLUDE_METADATA_ANNOTATIONS, "false")
+      .put(SapODataConstants.RESOURCE_PATH, ENTITY_SET)
+      .put(SapODataConstants.QUERY, "$format=json")
+      .put(SapODataConstants.SCHEMA, SCHEMA.toString())
+      .build();
+
+    List<StructuredRecord> records = getPipelineResults(properties);
+    Assert.assertEquals(2, records.size());
+  }
+
+  @Test
+  public void testSourceXmlWithSchemaSet() throws Exception {
+    Map<String, String> properties = new ImmutableMap.Builder<String, String>()
+      .put(SapODataConstants.ODATA_SERVICE_URL, getServerAddress() + SERVICE_PATH)
+      .put(SapODataConstants.INCLUDE_METADATA_ANNOTATIONS, "false")
+      .put(SapODataConstants.RESOURCE_PATH, ENTITY_SET)
+      .put(SapODataConstants.QUERY, "$format=xml")
+      .put(SapODataConstants.SCHEMA, SCHEMA.toString())
+      .build();
+
+    List<StructuredRecord> records = getPipelineResults(properties);
+    Assert.assertEquals(2, records.size());
   }
 }

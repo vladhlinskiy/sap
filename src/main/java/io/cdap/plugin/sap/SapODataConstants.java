@@ -66,7 +66,93 @@ public class SapODataConstants {
    */
   public static final String INCLUDE_METADATA_ANNOTATIONS = "includeMetadataAnnotations";
 
+  /**
+   * When metadata annotations are included(using {@link SapODataConstants#INCLUDE_METADATA_ANNOTATIONS}), each
+   * property is mapped to a CDAP 'record' with exactly two fields: "{@value SapODataConstants#VALUE_FIELD_NAME}" for
+   * value and "{@value SapODataConstants#METADATA_ANNOTATIONS_FIELD_NAME}" for metadata annotations.
+   */
   public static final String VALUE_FIELD_NAME = "value";
 
+  /**
+   * When metadata annotations are included(using {@link SapODataConstants#INCLUDE_METADATA_ANNOTATIONS}), each
+   * property is mapped to a CDAP 'record' with exactly two fields: "{@value SapODataConstants#VALUE_FIELD_NAME}" for
+   * value and "{@value SapODataConstants#METADATA_ANNOTATIONS_FIELD_NAME}" for metadata annotations.
+   */
   public static final String METADATA_ANNOTATIONS_FIELD_NAME = "metadata-annotations";
+
+  /**
+   * OData 4 geospatial data types are mapped to CDAP record with fields
+   * "{@value SapODataConstants#GEOSPATIAL_TYPE_FIELD_NAME}" for type and
+   * "{@value SapODataConstants#GEOSPATIAL_COORDINATES_FIELD_NAME}" for list of coordinates.
+   */
+  public static final String GEOSPATIAL_TYPE_FIELD_NAME = "type";
+
+  /**
+   * OData 4 geospatial data types are mapped to CDAP record with fields
+   * "{@value SapODataConstants#GEOSPATIAL_TYPE_FIELD_NAME}" for type and
+   * "{@value SapODataConstants#GEOSPATIAL_COORDINATES_FIELD_NAME}" for list of coordinates.
+   */
+  public static final String GEOSPATIAL_COORDINATES_FIELD_NAME = "coordinates";
+
+  /**
+   * OData 4 Stream type mapped to CDAP record with field
+   * "{@value SapODataConstants#STREAM_ETAG_FIELD_NAME}" for the ETag of the stream.
+   */
+  public static final String STREAM_ETAG_FIELD_NAME = "mediaEtag";
+
+  /**
+   * OData 4 Stream type mapped to CDAP record with field
+   * "{@value SapODataConstants#STREAM_ETAG_FIELD_NAME}" for the media type of the stream.
+   */
+  public static final String STREAM_CONTENT_TYPE_FIELD_NAME = "mediaContentType";
+
+  /**
+   * OData 4 Stream type mapped to CDAP record with field
+   * "{@value SapODataConstants#STREAM_ETAG_FIELD_NAME}" for the link used to read the stream.
+   */
+  public static final String STREAM_READ_LINK_FIELD_NAME = "mediaReadLink";
+
+  /**
+   * OData 4 Stream type mapped to CDAP record with field
+   * "{@value SapODataConstants#STREAM_ETAG_FIELD_NAME}" for the link used to edit/update the stream.
+   */
+  public static final String STREAM_EDIT_LINK_FIELD_NAME = "mediaEditLink";
+
+  /**
+   * OData 4 geospatial collection mapped to CDAP record with field
+   * "{@value SapODataConstants#GEO_COLLECTION_POINTS_FIELD_NAME}" for a list of geospatial "Point" values.
+   */
+  public static final String GEO_COLLECTION_POINTS_FIELD_NAME = "points";
+
+  /**
+   * OData 4 geospatial collection mapped to CDAP record with field
+   * "{@value SapODataConstants#GEO_COLLECTION_LINE_STRINGS_FIELD_NAME}" for a list of geospatial "LineString" values.
+   */
+  public static final String GEO_COLLECTION_LINE_STRINGS_FIELD_NAME = "lineStrings";
+
+  /**
+   * OData 4 geospatial collection mapped to CDAP record with field
+   * "{@value SapODataConstants#GEO_COLLECTION_POLYGONS_FIELD_NAME}" for a list of geospatial "Polygon" values.
+   */
+  public static final String GEO_COLLECTION_POLYGONS_FIELD_NAME = "polygons";
+
+  /**
+   * OData 4 geospatial collection mapped to CDAP record with field
+   * "{@value SapODataConstants#GEO_COLLECTION_MULTI_POINTS_FIELD_NAME}" for a list of geospatial "MultiPoint" values.
+   */
+  public static final String GEO_COLLECTION_MULTI_POINTS_FIELD_NAME = "multiPoints";
+
+  /**
+   * OData 4 geospatial collection mapped to CDAP record with field
+   * "{@value SapODataConstants#GEO_COLLECTION_MULTI_LINE_STRINGS_FIELD_NAME}" for a list of geospatial
+   * "MultiLineString" values.
+   */
+  public static final String GEO_COLLECTION_MULTI_LINE_STRINGS_FIELD_NAME = "multiLineStrings";
+
+  /**
+   * OData 4 geospatial collection mapped to CDAP record with field
+   * "{@value SapODataConstants#GEO_COLLECTION_MULTI_POLYGONS_FIELD_NAME}" for a list of geospatial "MultiPolygon"
+   * values.
+   */
+  public static final String GEO_COLLECTION_MULTI_POLYGONS_FIELD_NAME = "multiPolygons";
 }
