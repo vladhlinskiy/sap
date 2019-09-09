@@ -25,14 +25,12 @@ import java.net.URISyntaxException;
 import java.net.URL;
 import java.util.Iterator;
 import javax.annotation.Nullable;
-import javax.ws.rs.core.MediaType;
 
 /**
  * Abstract OData service client.
  */
 public abstract class ODataClient {
 
-  protected static final String XML_JSON_CONTENT_TYPE = MediaType.APPLICATION_XML + ";" + MediaType.APPLICATION_JSON;
   protected static final String METADATA = "$metadata";
   protected static final String SEPARATOR = "/";
   protected static final String QUERY_SEPARATOR = "?";

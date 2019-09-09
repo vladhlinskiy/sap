@@ -32,16 +32,23 @@ import javax.ws.rs.core.MediaType;
 public class SapOData4SourceETLTest extends BaseSapODataSourceETLTest {
 
   private static final String SERVICE_PATH = "/sap/opu/odata/SAP/ZGW100_XX_S2_SRV";
-  private static final String ENTITY_SET = "SalesOrder";
+  private static final String ENTITY_SET = "AllDataTypes";
 
   @Before
   public void testSetup() throws Exception {
-    // OData2 Service
     wireMockRule.stubFor(WireMock.get(WireMock.urlEqualTo(SERVICE_PATH + "/$metadata"))
                            .willReturn(WireMock.aResponse().withBody(readResourceFile("odata4/metadata.xml"))));
+    wireMockRule.stubFor(WireMock.get(WireMock.urlEqualTo(SERVICE_PATH + "/$metadata#AllDataTypes"))
+                           .willReturn(WireMock.aResponse().withBody(readResourceFile("odata4/metadata.xml"))));
+
+    wireMockRule.stubFor(WireMock.get(WireMock.urlEqualTo(SERVICE_PATH + "/" + ENTITY_SET + "?$format=xml"))
+                           .willReturn(WireMock.aResponse()
+                                         .withHeader(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_ATOM_XML)
+                                         .withBody(readResourceFile("odata4/AllDataTypes.xml"))));
+
     ResponseDefinitionBuilder jsonResponse = WireMock.aResponse()
       .withHeader(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON)
-      .withBody(readResourceFile("odata4/SalesOrder.json"));
+      .withBody(readResourceFile("odata4/AllDataTypes.json"));
     wireMockRule.stubFor(WireMock.get(WireMock.urlEqualTo(SERVICE_PATH + "/" + ENTITY_SET + "?$format=json"))
                            .willReturn(jsonResponse));
 
@@ -58,7 +65,7 @@ public class SapOData4SourceETLTest extends BaseSapODataSourceETLTest {
       .build();
 
     List<StructuredRecord> records = getPipelineResults(properties);
-    Assert.assertEquals(1, records.size());
+    Assert.assertEquals(2, records.size());
   }
 
   @Test
@@ -71,6 +78,19 @@ public class SapOData4SourceETLTest extends BaseSapODataSourceETLTest {
       .build();
 
     List<StructuredRecord> records = getPipelineResults(properties);
-    Assert.assertEquals(1, records.size());
+    Assert.assertEquals(2, records.size());
+  }
+
+  @Test
+  public void testSourceXml() throws Exception {
+    Map<String, String> properties = new ImmutableMap.Builder<String, String>()
+      .put(SapODataConstants.ODATA_SERVICE_URL, getServerAddress() + SERVICE_PATH)
+      .put(SapODataConstants.INCLUDE_METADATA_ANNOTATIONS, "false")
+      .put(SapODataConstants.RESOURCE_PATH, ENTITY_SET)
+      .put(SapODataConstants.QUERY, "$format=xml")
+      .build();
+
+    List<StructuredRecord> records = getPipelineResults(properties);
+    Assert.assertEquals(2, records.size());
   }
 }

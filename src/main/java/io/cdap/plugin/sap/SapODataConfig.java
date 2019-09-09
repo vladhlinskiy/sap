@@ -44,14 +44,12 @@ import javax.annotation.Nullable;
 public class SapODataConfig extends PluginConfig {
 
   private static final String QUESTION_MARK = "?";
-  private static final String QUERY_OPTIONS_DELIMITER = "&";
-  private static final String QUERY_OPTIONS_NAME_VALUE_DELIMITER = "=";
 
   private static final Set<Schema.Type> SUPPORTED_SIMPLE_TYPES = ImmutableSet.of(Schema.Type.BOOLEAN, Schema.Type.INT,
                                                                                  Schema.Type.FLOAT, Schema.Type.DOUBLE,
                                                                                  Schema.Type.BYTES, Schema.Type.LONG,
                                                                                  Schema.Type.STRING,
-                                                                                 Schema.Type.RECORD); // TODO
+                                                                                 Schema.Type.RECORD);
 
   private static final Set<Schema.LogicalType> SUPPORTED_LOGICAL_TYPES = ImmutableSet.of(
     Schema.LogicalType.DECIMAL, Schema.LogicalType.TIMESTAMP_MILLIS, Schema.LogicalType.TIMESTAMP_MICROS,
@@ -243,6 +241,10 @@ public class SapODataConfig extends PluginConfig {
       Schema nonNullableSchema = field.getSchema().isNullable() ?
         field.getSchema().getNonNullable() : field.getSchema();
       Schema.Type type = nonNullableSchema.getType();
+      if (type == Schema.Type.RECORD) {
+        // validate record schema recursively
+        validateSchema(nonNullableSchema, collector);
+      }
       Schema.LogicalType logicalType = nonNullableSchema.getLogicalType();
       if (!SUPPORTED_SIMPLE_TYPES.contains(type) && !SUPPORTED_LOGICAL_TYPES.contains(logicalType)) {
         String supportedTypeNames = Stream.concat(

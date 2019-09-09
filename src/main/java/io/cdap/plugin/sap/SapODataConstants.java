@@ -66,7 +66,31 @@ public class SapODataConstants {
    */
   public static final String INCLUDE_METADATA_ANNOTATIONS = "includeMetadataAnnotations";
 
+  /**
+   * When metadata annotations are included(using {@link SapODataConstants#INCLUDE_METADATA_ANNOTATIONS}), each
+   * property is mapped to a CDAP 'record' with exactly two fields: "{@value SapODataConstants#VALUE_FIELD_NAME}" for
+   * value and "{@value SapODataConstants#METADATA_ANNOTATIONS_FIELD_NAME}" for metadata annotations.
+   */
   public static final String VALUE_FIELD_NAME = "value";
 
+  /**
+   * When metadata annotations are included(using {@link SapODataConstants#INCLUDE_METADATA_ANNOTATIONS}), each
+   * property is mapped to a CDAP 'record' with exactly two fields: "{@value SapODataConstants#VALUE_FIELD_NAME}" for
+   * value and "{@value SapODataConstants#METADATA_ANNOTATIONS_FIELD_NAME}" for metadata annotations.
+   */
   public static final String METADATA_ANNOTATIONS_FIELD_NAME = "metadata-annotations";
+
+  /**
+   * OData 4 geospatial data types are mapped to CDAP record with fields
+   * "{@value SapODataConstants#GEOSPATIAL_TYPE_FIELD_NAME}" for type and
+   * "{@value SapODataConstants#GEOSPATIAL_COORDINATES_FIELD_NAME}" for list of coordinates.
+   */
+  public static final String GEOSPATIAL_TYPE_FIELD_NAME = "type";
+
+  /**
+   * OData 4 geospatial data types are mapped to CDAP record with fields
+   * "{@value SapODataConstants#GEOSPATIAL_TYPE_FIELD_NAME}" for type and
+   * "{@value SapODataConstants#GEOSPATIAL_COORDINATES_FIELD_NAME}" for list of coordinates.
+   */
+  public static final String GEOSPATIAL_COORDINATES_FIELD_NAME = "coordinates";
 }

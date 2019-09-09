@@ -19,7 +19,7 @@ package io.cdap.plugin.sap.odata.odata4;
 import io.cdap.plugin.sap.odata.EntityType;
 import io.cdap.plugin.sap.odata.ODataClient;
 import io.cdap.plugin.sap.odata.ODataEntity;
-import io.cdap.plugin.sap.odata.Property;
+import io.cdap.plugin.sap.odata.PropertyMetadata;
 import org.apache.olingo.client.api.communication.request.retrieve.EdmMetadataRequest;
 import org.apache.olingo.client.api.communication.request.retrieve.ODataEntitySetIteratorRequest;
 import org.apache.olingo.client.api.communication.response.ODataRetrieveResponse;
@@ -66,7 +66,7 @@ public class OData4Client extends ODataClient {
     ODataEntitySetIteratorRequest<ClientEntitySet, ClientEntity> request = client
       .getRetrieveRequestFactory()
       .getEntitySetIteratorRequest(queryURI);
-    request.setAccept(XML_JSON_CONTENT_TYPE);
+    request.setAccept(MediaType.APPLICATION_JSON);
 
     ODataRetrieveResponse<ClientEntitySetIterator<ClientEntitySet, ClientEntity>> response = request.execute();
     return new OData4EntityIterator(response.getBody());
@@ -80,7 +80,7 @@ public class OData4Client extends ODataClient {
     ODataRetrieveResponse<Edm> response = request.execute();
     Edm edm = response.getBody();
     EdmEntityType entityType = edm.getEntityContainer().getEntitySet(entitySetName).getEntityType();
-    List<Property> properties = new ArrayList<>();
+    List<PropertyMetadata> properties = new ArrayList<>();
     for (String propertyName : entityType.getPropertyNames()) {
       EdmProperty property = (EdmProperty) entityType.getProperty(propertyName);
       properties.add(edmToProperty(property));
@@ -90,13 +90,13 @@ public class OData4Client extends ODataClient {
     return new EntityType(entityType.getName(), properties);
   }
 
-  private Property edmToProperty(EdmProperty property) {
+  private PropertyMetadata edmToProperty(EdmProperty property) {
     String type = property.getType().getName();
     boolean nullable = property.isNullable();
     Integer precision = property.getPrecision();
     Integer scale = property.getScale();
 
     // TODO OData 4 metadata annotations
-    return new Property(property.getName(), type, nullable, precision, scale, null);
+    return new PropertyMetadata(property.getName(), type, nullable, precision, scale, null);
   }
 }

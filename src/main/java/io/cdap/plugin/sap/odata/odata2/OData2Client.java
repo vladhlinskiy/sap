@@ -19,7 +19,7 @@ package io.cdap.plugin.sap.odata.odata2;
 import io.cdap.plugin.sap.odata.EntityType;
 import io.cdap.plugin.sap.odata.ODataClient;
 import io.cdap.plugin.sap.odata.ODataEntity;
-import io.cdap.plugin.sap.odata.Property;
+import io.cdap.plugin.sap.odata.PropertyMetadata;
 import io.cdap.plugin.sap.odata.exception.ODataException;
 import org.apache.olingo.odata2.api.edm.Edm;
 import org.apache.olingo.odata2.api.edm.EdmAnnotationAttribute;
@@ -107,7 +107,7 @@ public class OData2Client extends ODataClient {
     try {
       EdmEntitySet entitySet = getMetadata().getDefaultEntityContainer().getEntitySet(entitySetName);
       EdmEntityType edmEntityType = entitySet.getEntityType();
-      List<Property> properties = new ArrayList<>();
+      List<PropertyMetadata> properties = new ArrayList<>();
       for (String propertyName : edmEntityType.getPropertyNames()) {
         EdmProperty property = (EdmProperty) edmEntityType.getProperty(propertyName);
         properties.add(edmToProperty(property));
@@ -119,7 +119,7 @@ public class OData2Client extends ODataClient {
     }
   }
 
-  private Property edmToProperty(EdmProperty property) throws EdmException {
+  private PropertyMetadata edmToProperty(EdmProperty property) throws EdmException {
     String type = property.getType().getName();
     boolean nullable = property.getFacets().isNullable();
     Integer precision = property.getFacets().getPrecision();
@@ -128,7 +128,7 @@ public class OData2Client extends ODataClient {
     Map<String, String> fieldMetadata = annotationAttributes == null ? null : annotationAttributes.stream()
       .collect(Collectors.toMap(EdmAnnotationAttribute::getName, EdmAnnotationAttribute::getText));
 
-    return new Property(property.getName(), type, nullable, precision, scale, fieldMetadata);
+    return new PropertyMetadata(property.getName(), type, nullable, precision, scale, fieldMetadata);
   }
 
   private void initMetadata() {
