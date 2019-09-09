@@ -20,6 +20,13 @@ import io.cdap.cdap.api.data.format.StructuredRecord;
 import io.cdap.cdap.api.data.format.UnexpectedFormatException;
 import io.cdap.cdap.api.data.schema.Schema;
 import io.cdap.plugin.sap.odata.ODataEntity;
+import org.apache.olingo.commons.api.edm.geo.GeospatialCollection;
+import org.apache.olingo.commons.api.edm.geo.LineString;
+import org.apache.olingo.commons.api.edm.geo.MultiLineString;
+import org.apache.olingo.commons.api.edm.geo.MultiPoint;
+import org.apache.olingo.commons.api.edm.geo.MultiPolygon;
+import org.apache.olingo.commons.api.edm.geo.Point;
+import org.apache.olingo.commons.api.edm.geo.Polygon;
 import org.apache.olingo.odata2.api.edm.EdmLiteralKind;
 import org.apache.olingo.odata2.api.edm.EdmSimpleTypeException;
 import org.apache.olingo.odata2.api.ep.entry.ODataEntry;
@@ -28,6 +35,7 @@ import org.apache.olingo.odata2.core.edm.EdmDateTimeOffset;
 import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.math.MathContext;
+import java.sql.Timestamp;
 import java.time.Instant;
 import java.util.Calendar;
 import java.util.GregorianCalendar;
@@ -137,7 +145,10 @@ public class ODataEntryToRecordTransformer {
         return ((Number) value).longValue();
       case STRING:
         // Edm.String, Edm.Guid, Edm.DateTimeOffset
-        ensureTypeValid(fieldName, value, String.class, UUID.class, Calendar.class);
+        ensureTypeValid(fieldName, value, String.class, UUID.class, Calendar.class, Point.class, Timestamp.class,
+                        LineString.class, Polygon.class, MultiPoint.class, MultiLineString.class, MultiPolygon.class,
+                        GeospatialCollection.class, BigDecimal.class);
+        // TODO Point, Timestamp#toString? , LineString, etc, Duration(BigDecimal)
         if (value instanceof Calendar) {
           return extractDateTimeOffset(fieldName, (Calendar) value);
         }

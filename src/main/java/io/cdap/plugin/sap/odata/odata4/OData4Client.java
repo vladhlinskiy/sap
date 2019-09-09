@@ -66,7 +66,7 @@ public class OData4Client extends ODataClient {
     ODataEntitySetIteratorRequest<ClientEntitySet, ClientEntity> request = client
       .getRetrieveRequestFactory()
       .getEntitySetIteratorRequest(queryURI);
-    request.setAccept(XML_JSON_CONTENT_TYPE);
+    request.setAccept(MediaType.APPLICATION_JSON); // TODO odata.metadata=full
 
     ODataRetrieveResponse<ClientEntitySetIterator<ClientEntitySet, ClientEntity>> response = request.execute();
     return new OData4EntityIterator(response.getBody());

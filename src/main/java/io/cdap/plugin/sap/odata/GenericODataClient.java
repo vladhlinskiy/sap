@@ -79,6 +79,7 @@ public class GenericODataClient extends ODataClient {
     }
   }
 
+  // TODO use DataServices#getDataServiceVersion
   private String getEdmVersion() {
     org.apache.olingo.client.api.ODataClient client = ODataClientFactory.getClient();
     if (isAuthRequired()) {

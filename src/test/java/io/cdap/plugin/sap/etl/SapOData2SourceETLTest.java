@@ -89,7 +89,6 @@ public class SapOData2SourceETLTest extends BaseSapODataSourceETLTest {
 
   @Before
   public void testSetup() throws Exception {
-    // OData2 Service
     wireMockRule.stubFor(WireMock.get(WireMock.urlEqualTo(SERVICE_PATH + "/$metadata"))
                            .willReturn(WireMock.aResponse().withBody(readResourceFile("odata2/metadata.xml"))));
     wireMockRule.stubFor(WireMock.get(WireMock.urlEqualTo(SERVICE_PATH + "/" + ENTITY_SET + "?$format=json"))

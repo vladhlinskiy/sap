@@ -209,6 +209,43 @@ public class SapODataSource extends BatchSource<NullWritable, ODataEntity, Struc
         return Schema.of(Schema.Type.LONG);
       case "String":
         return Schema.of(Schema.Type.STRING);
+      // TODO
+      case "GeographyPoint":
+        return Schema.of(Schema.Type.STRING);
+      case "GeographyLineString":
+        return Schema.of(Schema.Type.STRING);
+      case "GeographyPolygon":
+        return Schema.of(Schema.Type.STRING);
+      case "GeographyMultiPoint":
+        return Schema.of(Schema.Type.STRING);
+      case "GeographyMultiLineString":
+        return Schema.of(Schema.Type.STRING);
+      case "GeographyMultiPolygon":
+        return Schema.of(Schema.Type.STRING);
+      case "GeographyCollection":
+        return Schema.of(Schema.Type.STRING);
+      case "GeometryPoint":
+        return Schema.of(Schema.Type.STRING);
+      case "GeometryLineString":
+        return Schema.of(Schema.Type.STRING);
+      case "GeometryPolygon":
+        return Schema.of(Schema.Type.STRING);
+      case "GeometryMultiPoint":
+        return Schema.of(Schema.Type.STRING);
+      case "GeometryMultiLineString":
+        return Schema.of(Schema.Type.STRING);
+      case "GeometryMultiPolygon":
+        return Schema.of(Schema.Type.STRING);
+      case "GeometryCollection":
+        return Schema.of(Schema.Type.STRING);
+      case "Date":
+        return Schema.of(Schema.Type.STRING); // TODO check string representation
+      case "Duration":
+        return Schema.of(Schema.Type.STRING); // TODO check string representation
+      case "Stream":
+        return Schema.of(Schema.Type.STRING); // TODO ignore it
+      case "TimeOfDay":
+        return Schema.of(Schema.Type.STRING); // TODO check string representation
       default:
         // this should never happen
         throw new InvalidStageException(String.format("Field '%s' is of unsupported type '%s'.", property.getName(),

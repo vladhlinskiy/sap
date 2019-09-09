@@ -22,7 +22,6 @@ import org.apache.olingo.odata2.api.ep.entry.ODataEntry;
 
 import java.util.HashMap;
 import java.util.Map;
-import java.util.stream.Collectors;
 import javax.annotation.Nullable;
 
 /**
@@ -46,10 +45,9 @@ public class ODataEntity {
     return new ODataEntity(oDataEntry.getProperties());
   }
 
-  // TODO test
   public static ODataEntity valueOf(ClientEntity clientEntity) {
     Map<String, Object> properties = clientEntity.getProperties().stream()
-      .collect(Collectors.toMap(ClientProperty::getName, ODataEntity::getClientPropertyValue));
+      .collect(HashMap::new, (m, v) -> m.put(v.getName(), getClientPropertyValue(v)), HashMap::putAll);
     return new ODataEntity(properties);
   }
 
