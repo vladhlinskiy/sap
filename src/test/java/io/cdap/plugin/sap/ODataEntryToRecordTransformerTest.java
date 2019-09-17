@@ -401,7 +401,6 @@ public class ODataEntryToRecordTransformerTest {
     StructuredRecord secondLine = lineRecordOf(Geospatial.Dimension.GEOMETRY, secondLinePoints);
     List<StructuredRecord> lines = Arrays.asList(firstLine, secondLine);
     StructuredRecord expectedGeometryMultiLinesString = multilineStringRecordOf(Geospatial.Dimension.GEOMETRY, lines);
-
     List<List<List<Double>>> coordinates = Arrays.asList(
       Arrays.asList(Arrays.asList(100.0, 0.0), Arrays.asList(110.0, 0.0),
                     Arrays.asList(110.0, 1.0), Arrays.asList(100.0, 1.0),
@@ -488,7 +487,6 @@ public class ODataEntryToRecordTransformerTest {
     );
     StructuredRecord firstPolygon = polygonRecordOf(Geospatial.Dimension.GEOMETRY, exterior, interior, 1);
     StructuredRecord secondPolygon = polygonRecordOf(Geospatial.Dimension.GEOMETRY, exterior, interior, 1);
-
     StructuredRecord expectedGeometryMultiPolygon = StructuredRecord.builder(multiPolygonSchema)
       .set(SapODataConstants.GEOSPATIAL_TYPE_FIELD_NAME, "MultiPolygon")
       .set(SapODataConstants.GEOSPATIAL_DIMENSION_FIELD_NAME, Geospatial.Dimension.GEOMETRY.name())
