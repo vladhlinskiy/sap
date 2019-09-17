@@ -203,4 +203,25 @@ public class SapODataConstants {
    * values.
    */
   public static final String GEO_COLLECTION_MULTI_POLYGONS_FIELD_NAME = "multiPolygons";
+
+  public static final String ANNOTATION_TERM_FIELD_NAME = "term";
+  public static final String ANNOTATION_QUALIFIER_FIELD_NAME = "qualifier";
+  public static final String ANNOTATION_EXPRESSION_FIELD_NAME = "expression";
+  public static final String EXPRESSION_NAME_FIELD_NAME = "name";
+  public static final String EXPRESSION_VALUE_FIELD_NAME = "value";
+  public static final String EXPRESSION_FUNCTION_FIELD_NAME = "function";
+  public static final String EXPRESSION_PARAMETERS_FIELD_NAME = "parameters";
+  public static final String EXPRESSION_LEFT_FIELD_NAME = "left";
+  public static final String EXPRESSION_RIGHT_FIELD_NAME = "right";
+  public static final String EXPRESSION_TYPE_FIELD_NAME = "type";
+  public static final String EXPRESSION_MAX_LENGTH_FIELD_NAME = "maxLength";
+  public static final String EXPRESSION_PRECISION_FIELD_NAME = "precision";
+  public static final String EXPRESSION_SCALE_FIELD_NAME = "scale";
+  public static final String EXPRESSION_SRID_FIELD_NAME = "srid";
+  public static final String EXPRESSION_ITEMS_FIELD_NAME = "items";
+  public static final String EXPRESSION_GUARD_FIELD_NAME = "guard";
+  public static final String EXPRESSION_THEN_FIELD_NAME = "then";
+  public static final String EXPRESSION_ELSE_FIELD_NAME = "else";
+  public static final String EXPRESSION_ELEMENT_NAME_FIELD_NAME = "elementName";
+  public static final String EXPRESSION_PROPERTY_VALUES_FIELD_NAME = "propertyValues";
 }
