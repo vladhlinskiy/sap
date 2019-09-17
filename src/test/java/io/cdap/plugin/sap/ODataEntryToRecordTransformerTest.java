@@ -58,7 +58,7 @@ import java.util.concurrent.TimeUnit;
 /**
  * {@link ODataEntryToRecordTransformer} test.
  */
-public class ODataEntryToRecordTransformerTest extends SapODataTestBase {
+public class ODataEntryToRecordTransformerTest {
 
   @Rule
   public ExpectedException thrown = ExpectedException.none();
@@ -159,7 +159,6 @@ public class ODataEntryToRecordTransformerTest extends SapODataTestBase {
   @Test
   @SuppressWarnings("ConstantConditions")
   public void testTransformOData4SimpleTypes() throws Exception {
-
     Schema schema = Schema.recordOf("schema",
                                     Schema.Field.of("date_micros", Schema.of(Schema.LogicalType.TIMESTAMP_MICROS)),
                                     Schema.Field.of("date_millis", Schema.of(Schema.LogicalType.TIMESTAMP_MILLIS)),
@@ -198,17 +197,17 @@ public class ODataEntryToRecordTransformerTest extends SapODataTestBase {
   @Test
   @SuppressWarnings("ConstantConditions")
   public void testTransformOData4GeospatialPoint() throws Exception {
-
+    Schema pointSchema = SapODataSchemas.pointSchema("geometry_point");
     Schema schema = Schema.recordOf("schema",
-                                    Schema.Field.of("geometry_point", pointSchema("geometry_point")),
-                                    Schema.Field.of("geography_point", pointSchema("geography_point")));
+                                    Schema.Field.of("geometry_point", pointSchema),
+                                    Schema.Field.of("geography_point", pointSchema));
 
-    StructuredRecord expectedGeometryPoint = StructuredRecord.builder(pointSchema("point-schema"))
+    StructuredRecord expectedGeometryPoint = StructuredRecord.builder(pointSchema)
       .set(SapODataConstants.GEOSPATIAL_TYPE_FIELD_NAME, "Point")
       .set(SapODataConstants.GEOSPATIAL_COORDINATES_FIELD_NAME, Arrays.asList(1.0, 1.0))
       .build();
 
-    StructuredRecord expectedGeographyPoint = StructuredRecord.builder(pointSchema("point-schema"))
+    StructuredRecord expectedGeographyPoint = StructuredRecord.builder(pointSchema)
       .set(SapODataConstants.GEOSPATIAL_TYPE_FIELD_NAME, "Point")
       .set(SapODataConstants.GEOSPATIAL_COORDINATES_FIELD_NAME, Arrays.asList(2.0, 2.0))
       .build();
@@ -238,20 +237,19 @@ public class ODataEntryToRecordTransformerTest extends SapODataTestBase {
   @Test
   @SuppressWarnings("ConstantConditions")
   public void testTransformOData4GeospatialLineString() throws Exception {
-
+    Schema lineStringSchema = SapODataSchemas.lineStringSchema("line-string-schema");
     Schema schema = Schema.recordOf("schema",
-                                    Schema.Field.of("geometry_line_string", lineStringSchema("geometry_line_string")),
-                                    Schema.Field.of("geography_line_string", lineStringSchema("geography_line_string"))
-    );
+                                    Schema.Field.of("geometry_line_string", lineStringSchema),
+                                    Schema.Field.of("geography_line_string", lineStringSchema));
 
     List<List<Double>> geometryCoordinates = Arrays.asList(Arrays.asList(1.0, 0.0), Arrays.asList(2.0, 1.0));
-    StructuredRecord expectedGeometryLineString = StructuredRecord.builder(lineStringSchema("line-string-schema"))
+    StructuredRecord expectedGeometryLineString = StructuredRecord.builder(lineStringSchema)
       .set(SapODataConstants.GEOSPATIAL_TYPE_FIELD_NAME, "LineString")
       .set(SapODataConstants.GEOSPATIAL_COORDINATES_FIELD_NAME, geometryCoordinates)
       .build();
 
     List<List<Double>> geographyCoordinates = Arrays.asList(Arrays.asList(3.0, 1.0), Arrays.asList(4.0, 1.0));
-    StructuredRecord expectedGeographyLineString = StructuredRecord.builder(lineStringSchema("line-string-schema"))
+    StructuredRecord expectedGeographyLineString = StructuredRecord.builder(lineStringSchema)
       .set(SapODataConstants.GEOSPATIAL_TYPE_FIELD_NAME, "LineString")
       .set(SapODataConstants.GEOSPATIAL_COORDINATES_FIELD_NAME, geographyCoordinates)
       .build();
@@ -281,20 +279,19 @@ public class ODataEntryToRecordTransformerTest extends SapODataTestBase {
   @Test
   @SuppressWarnings("ConstantConditions")
   public void testTransformOData4GeospatialMultiPoint() throws Exception {
-
+    Schema multiPointSchema = SapODataSchemas.multiPointSchema("geometry_multi_point");
     Schema schema = Schema.recordOf("schema",
-                                    Schema.Field.of("geometry_multi_point", multiPointSchema("geometry_multi_point")),
-                                    Schema.Field.of("geography_multi_point", multiPointSchema("geography_multi_point"))
-    );
+                                    Schema.Field.of("geometry_multi_point", multiPointSchema),
+                                    Schema.Field.of("geography_multi_point", multiPointSchema));
 
     List<List<Double>> geometryCoordinates = Arrays.asList(Arrays.asList(1.0, 0.0), Arrays.asList(2.0, 1.0));
-    StructuredRecord expectedGeometryMultiPoint = StructuredRecord.builder(multiPointSchema("multi-point-schema"))
+    StructuredRecord expectedGeometryMultiPoint = StructuredRecord.builder(multiPointSchema)
       .set(SapODataConstants.GEOSPATIAL_TYPE_FIELD_NAME, "MultiPoint")
       .set(SapODataConstants.GEOSPATIAL_COORDINATES_FIELD_NAME, geometryCoordinates)
       .build();
 
     List<List<Double>> geographyCoordinates = Arrays.asList(Arrays.asList(3.0, 1.0), Arrays.asList(4.0, 1.0));
-    StructuredRecord expectedGeographyMultiPoint = StructuredRecord.builder(multiPointSchema("multi-point-schema"))
+    StructuredRecord expectedGeographyMultiPoint = StructuredRecord.builder(multiPointSchema)
       .set(SapODataConstants.GEOSPATIAL_TYPE_FIELD_NAME, "MultiPoint")
       .set(SapODataConstants.GEOSPATIAL_COORDINATES_FIELD_NAME, geographyCoordinates)
       .build();
@@ -324,11 +321,10 @@ public class ODataEntryToRecordTransformerTest extends SapODataTestBase {
   @Test
   @SuppressWarnings("ConstantConditions")
   public void testTransformOData4GeospatialPolygon() throws Exception {
-
+    Schema polygonSchema = SapODataSchemas.polygonSchema("geometry_polygon");
     Schema schema = Schema.recordOf("schema",
-                                    Schema.Field.of("geometry_polygon", polygonSchema("geometry_polygon")),
-                                    Schema.Field.of("geography_polygon", polygonSchema("geography_polygon"))
-    );
+                                    Schema.Field.of("geometry_polygon", polygonSchema),
+                                    Schema.Field.of("geography_polygon", polygonSchema));
 
     List<List<List<Double>>> coordinates = Arrays.asList(
       // exterior
@@ -340,12 +336,12 @@ public class ODataEntryToRecordTransformerTest extends SapODataTestBase {
                     Arrays.asList(100.8, 0.8), Arrays.asList(100.2, 0.8),
                     Arrays.asList(100.2, 0.2))
     );
-    StructuredRecord expectedGeometryPolygon = StructuredRecord.builder(polygonSchema("polygon-schema"))
+    StructuredRecord expectedGeometryPolygon = StructuredRecord.builder(polygonSchema)
       .set(SapODataConstants.GEOSPATIAL_TYPE_FIELD_NAME, "Polygon")
       .set(SapODataConstants.GEOSPATIAL_COORDINATES_FIELD_NAME, coordinates)
       .build();
 
-    StructuredRecord expectedGeographyPolygon = StructuredRecord.builder(polygonSchema("polygon-schema"))
+    StructuredRecord expectedGeographyPolygon = StructuredRecord.builder(polygonSchema)
       .set(SapODataConstants.GEOSPATIAL_TYPE_FIELD_NAME, "Polygon")
       .set(SapODataConstants.GEOSPATIAL_COORDINATES_FIELD_NAME, coordinates)
       .build();
@@ -375,11 +371,10 @@ public class ODataEntryToRecordTransformerTest extends SapODataTestBase {
   @Test
   @SuppressWarnings("ConstantConditions")
   public void testTransformOData4GeospatialMultiLineString() throws Exception {
-
+    Schema multiLineStringSchema = SapODataSchemas.multiLineStringSchema("geometry_multi_ls");
     Schema schema = Schema.recordOf("schema",
-                                    Schema.Field.of("geometry_multi_ls", multiLineStringSchema("geometry_multi_ls")),
-                                    Schema.Field.of("geography_multi_ls", multiLineStringSchema("geography_multi_ls"))
-    );
+                                    Schema.Field.of("geometry_multi_ls", multiLineStringSchema),
+                                    Schema.Field.of("geography_multi_ls", multiLineStringSchema));
 
     List<List<List<Double>>> coordinates = Arrays.asList(
       // exterior
@@ -391,12 +386,12 @@ public class ODataEntryToRecordTransformerTest extends SapODataTestBase {
                     Arrays.asList(100.8, 0.8), Arrays.asList(100.2, 0.8),
                     Arrays.asList(100.2, 0.2))
     );
-    StructuredRecord expectedGeometryMultiLS = StructuredRecord.builder(multiLineStringSchema("multi-ls-schema"))
+    StructuredRecord expectedGeometryMultiLS = StructuredRecord.builder(multiLineStringSchema)
       .set(SapODataConstants.GEOSPATIAL_TYPE_FIELD_NAME, "MultiLineString")
       .set(SapODataConstants.GEOSPATIAL_COORDINATES_FIELD_NAME, coordinates)
       .build();
 
-    StructuredRecord expectedGeographyMultiLS = StructuredRecord.builder(multiLineStringSchema("multi-ls-schema"))
+    StructuredRecord expectedGeographyMultiLS = StructuredRecord.builder(multiLineStringSchema)
       .set(SapODataConstants.GEOSPATIAL_TYPE_FIELD_NAME, "MultiLineString")
       .set(SapODataConstants.GEOSPATIAL_COORDINATES_FIELD_NAME, coordinates)
       .build();
@@ -426,11 +421,10 @@ public class ODataEntryToRecordTransformerTest extends SapODataTestBase {
   @Test
   @SuppressWarnings("ConstantConditions")
   public void testTransformOData4GeospatialMultiPolygon() throws Exception {
-
-    Schema schema = Schema.recordOf(
-      "schema",
-      Schema.Field.of("geometry_multi_polygon", multiPolygonSchema("geometry_multi_polygon")),
-      Schema.Field.of("geography_multi_polygon", multiPolygonSchema("geography_multi_polygon")));
+    Schema multiPolygonSchema = SapODataSchemas.multiPolygonSchema("geometry_multi_polygon");
+    Schema schema = Schema.recordOf("schema",
+                                    Schema.Field.of("geometry_multi_polygon", multiPolygonSchema),
+                                    Schema.Field.of("geography_multi_polygon", multiPolygonSchema));
 
     List<List<List<List<Double>>>> coordinates = Arrays.asList(
       // first polygon
@@ -458,12 +452,12 @@ public class ODataEntryToRecordTransformerTest extends SapODataTestBase {
       )
     );
 
-    StructuredRecord expectedGeometryMultiPolygon = StructuredRecord.builder(multiPolygonSchema("polygon-schema"))
+    StructuredRecord expectedGeometryMultiPolygon = StructuredRecord.builder(multiPolygonSchema)
       .set(SapODataConstants.GEOSPATIAL_TYPE_FIELD_NAME, "MultiPolygon")
       .set(SapODataConstants.GEOSPATIAL_COORDINATES_FIELD_NAME, coordinates)
       .build();
 
-    StructuredRecord expectedGeographyMultiPolygon = StructuredRecord.builder(multiPolygonSchema("polygon-schema"))
+    StructuredRecord expectedGeographyMultiPolygon = StructuredRecord.builder(multiPolygonSchema)
       .set(SapODataConstants.GEOSPATIAL_TYPE_FIELD_NAME, "MultiPolygon")
       .set(SapODataConstants.GEOSPATIAL_COORDINATES_FIELD_NAME, coordinates)
       .build();
@@ -493,10 +487,8 @@ public class ODataEntryToRecordTransformerTest extends SapODataTestBase {
   @Test
   @SuppressWarnings("ConstantConditions")
   public void testTransformOData4GeometryCollection() throws Exception {
-
-    Schema schema = Schema.recordOf("schema",
-                                    Schema.Field.of("geometry_collection", collectionSchema("geometry_collection"))
-    );
+    Schema collectionSchema = SapODataSchemas.collectionSchema("geometry_collection");
+    Schema schema = Schema.recordOf("schema", Schema.Field.of("geometry_collection", collectionSchema));
 
     GeospatialCollection expectedGeometryCollection = geospatialCollection(Geospatial.Dimension.GEOMETRY);
     ODataEntity entity = ODataEntityBuilder.builder()
@@ -532,10 +524,8 @@ public class ODataEntryToRecordTransformerTest extends SapODataTestBase {
   @Test
   @SuppressWarnings("ConstantConditions")
   public void testTransformOData4GeographyCollection() throws Exception {
-
-    Schema schema = Schema.recordOf("schema",
-                                    Schema.Field.of("geography_collection", collectionSchema("geography_collection"))
-    );
+    Schema collectionSchema = SapODataSchemas.collectionSchema("geometry_collection");
+    Schema schema = Schema.recordOf("schema", Schema.Field.of("geography_collection", collectionSchema));
 
     GeospatialCollection expectedGeometryCollection = geospatialCollection(Geospatial.Dimension.GEOGRAPHY);
     ODataEntity entity = ODataEntityBuilder.builder()
