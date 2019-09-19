@@ -107,7 +107,7 @@ public class SapODataSchemas {
     );
   }
 
-  public static Schema annotationSchema(String name, Schema expressionSchema) {
+  public static Schema annotationSchema(String name, @Nullable Schema expressionSchema) {
     return Schema.recordOf(
       name + "-annotation",
       Schema.Field.of(SapODataConstants.ANNOTATION_TERM_FIELD_NAME, Schema.of(Schema.Type.STRING)),
@@ -116,7 +116,7 @@ public class SapODataSchemas {
       Schema.Field.of(SapODataConstants.ANNOTATION_EXPRESSION_FIELD_NAME, expressionSchema));
   }
 
-  public static Schema constantExpressionSchema(String name) {
+  public static Schema singleValueExpressionSchema(String name) {
     return Schema.recordOf(
       name + "-expression",
       Schema.Field.of(SapODataConstants.EXPRESSION_NAME_FIELD_NAME, Schema.of(Schema.Type.STRING)),

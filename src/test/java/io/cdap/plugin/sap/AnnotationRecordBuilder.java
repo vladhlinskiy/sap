@@ -109,7 +109,7 @@ public final class AnnotationRecordBuilder {
   }
 
   protected StructuredRecord singleValueExpression(String expressionName, Object value) {
-    return StructuredRecord.builder(SapODataSchemas.constantExpressionSchema(fieldName))
+    return StructuredRecord.builder(SapODataSchemas.singleValueExpressionSchema(fieldName))
       .set(SapODataConstants.EXPRESSION_NAME_FIELD_NAME, expressionName)
       .set(SapODataConstants.EXPRESSION_VALUE_FIELD_NAME, value)
       .build();
