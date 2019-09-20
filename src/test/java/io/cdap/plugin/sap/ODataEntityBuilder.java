@@ -248,33 +248,34 @@ public final class ODataEntityBuilder {
     return set(name, multiPoint, EdmGeographyMultiPoint.getInstance());
   }
 
-  public ODataEntityBuilder setGeometryPolygon(String name, List<List<List<Double>>> coordinates) throws
-    EdmPrimitiveTypeException {
-    List<Point> exteriror = coordinates.get(0).stream()
+  public ODataEntityBuilder setGeometryPolygon(String name, List<List<Double>> exteriorCoordinates,
+                                               List<List<Double>> interiorCoordinates)
+    throws EdmPrimitiveTypeException {
+    List<Point> exterior = exteriorCoordinates.stream()
       .map(c -> pointOf(Geospatial.Dimension.GEOMETRY, c.get(0), c.get(1)))
       .collect(Collectors.toList());
 
-    List<Point> interiror = coordinates.get(1).stream()
+    List<Point> interior = interiorCoordinates.stream()
       .map(c -> pointOf(Geospatial.Dimension.GEOMETRY, c.get(0), c.get(1)))
       .collect(Collectors.toList());
 
-    Polygon polygon = new Polygon(Geospatial.Dimension.GEOMETRY, TEST_SRID, interiror, exteriror);
+    Polygon polygon = new Polygon(Geospatial.Dimension.GEOMETRY, TEST_SRID, interior, exterior);
 
     return set(name, polygon, EdmGeometryPolygon.getInstance());
   }
 
-  public ODataEntityBuilder setGeographyPolygon(String name, List<List<List<Double>>> coordinates)
+  public ODataEntityBuilder setGeographyPolygon(String name, List<List<Double>> exteriorCoordinates,
+                                                List<List<Double>> interiorCoordinates)
     throws EdmPrimitiveTypeException {
-
-    List<Point> exteriror = coordinates.get(0).stream()
+    List<Point> exterior = exteriorCoordinates.stream()
       .map(c -> pointOf(Geospatial.Dimension.GEOGRAPHY, c.get(0), c.get(1)))
       .collect(Collectors.toList());
 
-    List<Point> interiror = coordinates.get(1).stream()
+    List<Point> interior = interiorCoordinates.stream()
       .map(c -> pointOf(Geospatial.Dimension.GEOGRAPHY, c.get(0), c.get(1)))
       .collect(Collectors.toList());
 
-    Polygon polygon = new Polygon(Geospatial.Dimension.GEOGRAPHY, TEST_SRID, interiror, exteriror);
+    Polygon polygon = new Polygon(Geospatial.Dimension.GEOGRAPHY, TEST_SRID, interior, exterior);
 
     return set(name, polygon, EdmGeographyPolygon.getInstance());
   }

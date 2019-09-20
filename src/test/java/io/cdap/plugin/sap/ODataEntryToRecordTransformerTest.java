@@ -58,7 +58,7 @@ import java.util.concurrent.TimeUnit;
 /**
  * {@link ODataEntryToRecordTransformer} test.
  */
-public class ODataEntryToRecordTransformerTest extends SapODataTestBase {
+public class ODataEntryToRecordTransformerTest {
 
   @Rule
   public ExpectedException thrown = ExpectedException.none();
@@ -159,7 +159,6 @@ public class ODataEntryToRecordTransformerTest extends SapODataTestBase {
   @Test
   @SuppressWarnings("ConstantConditions")
   public void testTransformOData4SimpleTypes() throws Exception {
-
     Schema schema = Schema.recordOf("schema",
                                     Schema.Field.of("date_micros", Schema.of(Schema.LogicalType.TIMESTAMP_MICROS)),
                                     Schema.Field.of("date_millis", Schema.of(Schema.LogicalType.TIMESTAMP_MILLIS)),
@@ -198,21 +197,13 @@ public class ODataEntryToRecordTransformerTest extends SapODataTestBase {
   @Test
   @SuppressWarnings("ConstantConditions")
   public void testTransformOData4GeospatialPoint() throws Exception {
-
+    Schema pointSchema = SapODataSchemas.pointSchema("geometry_point");
     Schema schema = Schema.recordOf("schema",
-                                    Schema.Field.of("geometry_point", pointSchema("geometry_point")),
-                                    Schema.Field.of("geography_point", pointSchema("geography_point")));
+                                    Schema.Field.of("geometry_point", pointSchema),
+                                    Schema.Field.of("geography_point", pointSchema));
 
-    StructuredRecord expectedGeometryPoint = StructuredRecord.builder(pointSchema("point-schema"))
-      .set(SapODataConstants.GEOSPATIAL_TYPE_FIELD_NAME, "Point")
-      .set(SapODataConstants.GEOSPATIAL_COORDINATES_FIELD_NAME, Arrays.asList(1.0, 1.0))
-      .build();
-
-    StructuredRecord expectedGeographyPoint = StructuredRecord.builder(pointSchema("point-schema"))
-      .set(SapODataConstants.GEOSPATIAL_TYPE_FIELD_NAME, "Point")
-      .set(SapODataConstants.GEOSPATIAL_COORDINATES_FIELD_NAME, Arrays.asList(2.0, 2.0))
-      .build();
-
+    StructuredRecord expectedGeometryPoint = pointRecordOf(Geospatial.Dimension.GEOMETRY, 1.0, 1.0, 0.0);
+    StructuredRecord expectedGeographyPoint = pointRecordOf(Geospatial.Dimension.GEOGRAPHY, 2.0, 2.0, 0.0);
     ODataEntity entity = ODataEntityBuilder.builder()
       .setGeometryPoint("geometry_point", 1.0, 1.0)
       .setGeographyPoint("geography_point", 2.0, 2.0)
@@ -223,42 +214,33 @@ public class ODataEntryToRecordTransformerTest extends SapODataTestBase {
     StructuredRecord actualGeometryPoint = transformed.get("geometry_point");
     StructuredRecord actualGeographyPoint = transformed.get("geography_point");
 
-    Assert.assertNotNull(actualGeometryPoint);
-    Assert.assertNotNull(actualGeographyPoint);
-    Assert.assertEquals(expectedGeometryPoint.<String>get(SapODataConstants.GEOSPATIAL_TYPE_FIELD_NAME),
-                        actualGeometryPoint.get(SapODataConstants.GEOSPATIAL_TYPE_FIELD_NAME));
-    Assert.assertEquals(expectedGeometryPoint.<List>get(SapODataConstants.GEOSPATIAL_COORDINATES_FIELD_NAME),
-                        actualGeometryPoint.get(SapODataConstants.GEOSPATIAL_COORDINATES_FIELD_NAME));
-    Assert.assertEquals(expectedGeographyPoint.<String>get(SapODataConstants.GEOSPATIAL_TYPE_FIELD_NAME),
-                        actualGeographyPoint.get(SapODataConstants.GEOSPATIAL_TYPE_FIELD_NAME));
-    Assert.assertEquals(expectedGeographyPoint.<List>get(SapODataConstants.GEOSPATIAL_COORDINATES_FIELD_NAME),
-                        actualGeographyPoint.get(SapODataConstants.GEOSPATIAL_COORDINATES_FIELD_NAME));
+    Assert.assertEquals(expectedGeometryPoint, actualGeometryPoint);
+    Assert.assertEquals(expectedGeographyPoint, actualGeographyPoint);
   }
 
   @Test
   @SuppressWarnings("ConstantConditions")
   public void testTransformOData4GeospatialLineString() throws Exception {
-
+    Schema lineStringSchema = SapODataSchemas.lineStringSchema("line-string-schema");
     Schema schema = Schema.recordOf("schema",
-                                    Schema.Field.of("geometry_line_string", lineStringSchema("geometry_line_string")),
-                                    Schema.Field.of("geography_line_string", lineStringSchema("geography_line_string"))
+                                    Schema.Field.of("geometry_line_string", lineStringSchema),
+                                    Schema.Field.of("geography_line_string", lineStringSchema));
+
+    List<StructuredRecord> geometryCoordinates = Arrays.asList(
+      pointRecordOf(Geospatial.Dimension.GEOMETRY, 1.0, 0.0, 0.0),
+      pointRecordOf(Geospatial.Dimension.GEOMETRY, 2.0, 1.0, 0.0)
     );
+    StructuredRecord expectedGeometryLineString = lineRecordOf(Geospatial.Dimension.GEOMETRY, geometryCoordinates);
 
-    List<List<Double>> geometryCoordinates = Arrays.asList(Arrays.asList(1.0, 0.0), Arrays.asList(2.0, 1.0));
-    StructuredRecord expectedGeometryLineString = StructuredRecord.builder(lineStringSchema("line-string-schema"))
-      .set(SapODataConstants.GEOSPATIAL_TYPE_FIELD_NAME, "LineString")
-      .set(SapODataConstants.GEOSPATIAL_COORDINATES_FIELD_NAME, geometryCoordinates)
-      .build();
-
-    List<List<Double>> geographyCoordinates = Arrays.asList(Arrays.asList(3.0, 1.0), Arrays.asList(4.0, 1.0));
-    StructuredRecord expectedGeographyLineString = StructuredRecord.builder(lineStringSchema("line-string-schema"))
-      .set(SapODataConstants.GEOSPATIAL_TYPE_FIELD_NAME, "LineString")
-      .set(SapODataConstants.GEOSPATIAL_COORDINATES_FIELD_NAME, geographyCoordinates)
-      .build();
+    List<StructuredRecord> geographyCoordinates = Arrays.asList(
+      pointRecordOf(Geospatial.Dimension.GEOGRAPHY, 3.0, 1.0, 0.0),
+      pointRecordOf(Geospatial.Dimension.GEOGRAPHY, 4.0, 1.0, 0.0)
+    );
+    StructuredRecord expectedGeographyLineString = lineRecordOf(Geospatial.Dimension.GEOGRAPHY, geographyCoordinates);
 
     ODataEntity entity = ODataEntityBuilder.builder()
-      .setGeometryLineString("geometry_line_string", geometryCoordinates)
-      .setGeographyLineString("geography_line_string", geographyCoordinates)
+      .setGeometryLineString("geometry_line_string", Arrays.asList(Arrays.asList(1.0, 0.0), Arrays.asList(2.0, 1.0)))
+      .setGeographyLineString("geography_line_string", Arrays.asList(Arrays.asList(3.0, 1.0), Arrays.asList(4.0, 1.0)))
       .build();
 
     ODataEntryToRecordTransformer transformer = new ODataEntryToRecordTransformer(schema);
@@ -266,42 +248,41 @@ public class ODataEntryToRecordTransformerTest extends SapODataTestBase {
     StructuredRecord actualGeometryLineString = transformed.get("geometry_line_string");
     StructuredRecord actualGeographyLineString = transformed.get("geography_line_string");
 
-    Assert.assertNotNull(actualGeometryLineString);
-    Assert.assertNotNull(actualGeographyLineString);
-    Assert.assertEquals(expectedGeometryLineString.<String>get(SapODataConstants.GEOSPATIAL_TYPE_FIELD_NAME),
-                        actualGeometryLineString.get(SapODataConstants.GEOSPATIAL_TYPE_FIELD_NAME));
-    Assert.assertEquals(expectedGeometryLineString.<List>get(SapODataConstants.GEOSPATIAL_COORDINATES_FIELD_NAME),
-                        actualGeometryLineString.get(SapODataConstants.GEOSPATIAL_COORDINATES_FIELD_NAME));
-    Assert.assertEquals(expectedGeographyLineString.<String>get(SapODataConstants.GEOSPATIAL_TYPE_FIELD_NAME),
-                        actualGeographyLineString.get(SapODataConstants.GEOSPATIAL_TYPE_FIELD_NAME));
-    Assert.assertEquals(expectedGeographyLineString.<List>get(SapODataConstants.GEOSPATIAL_COORDINATES_FIELD_NAME),
-                        actualGeographyLineString.get(SapODataConstants.GEOSPATIAL_COORDINATES_FIELD_NAME));
+    Assert.assertEquals(expectedGeometryLineString, actualGeometryLineString);
+    Assert.assertEquals(expectedGeographyLineString, actualGeographyLineString);
   }
 
   @Test
   @SuppressWarnings("ConstantConditions")
   public void testTransformOData4GeospatialMultiPoint() throws Exception {
-
+    Schema multiPointSchema = SapODataSchemas.multiPointSchema("geometry_multi_point");
     Schema schema = Schema.recordOf("schema",
-                                    Schema.Field.of("geometry_multi_point", multiPointSchema("geometry_multi_point")),
-                                    Schema.Field.of("geography_multi_point", multiPointSchema("geography_multi_point"))
-    );
+                                    Schema.Field.of("geometry_multi_point", multiPointSchema),
+                                    Schema.Field.of("geography_multi_point", multiPointSchema));
 
-    List<List<Double>> geometryCoordinates = Arrays.asList(Arrays.asList(1.0, 0.0), Arrays.asList(2.0, 1.0));
-    StructuredRecord expectedGeometryMultiPoint = StructuredRecord.builder(multiPointSchema("multi-point-schema"))
+    List<StructuredRecord> geometryCoordinates = Arrays.asList(
+      pointRecordOf(Geospatial.Dimension.GEOMETRY, 1.0, 0.0, 0.0),
+      pointRecordOf(Geospatial.Dimension.GEOMETRY, 2.0, 1.0, 0.0)
+    );
+    StructuredRecord expectedGeometryMultiPoint = StructuredRecord.builder(multiPointSchema)
       .set(SapODataConstants.GEOSPATIAL_TYPE_FIELD_NAME, "MultiPoint")
+      .set(SapODataConstants.GEOSPATIAL_DIMENSION_FIELD_NAME, Geospatial.Dimension.GEOMETRY.name())
       .set(SapODataConstants.GEOSPATIAL_COORDINATES_FIELD_NAME, geometryCoordinates)
       .build();
 
-    List<List<Double>> geographyCoordinates = Arrays.asList(Arrays.asList(3.0, 1.0), Arrays.asList(4.0, 1.0));
-    StructuredRecord expectedGeographyMultiPoint = StructuredRecord.builder(multiPointSchema("multi-point-schema"))
+    List<StructuredRecord> geographyCoordinates = Arrays.asList(
+      pointRecordOf(Geospatial.Dimension.GEOGRAPHY, 3.0, 1.0, 0.0),
+      pointRecordOf(Geospatial.Dimension.GEOGRAPHY, 4.0, 1.0, 0.0)
+    );
+    StructuredRecord expectedGeographyMultiPoint = StructuredRecord.builder(multiPointSchema)
       .set(SapODataConstants.GEOSPATIAL_TYPE_FIELD_NAME, "MultiPoint")
+      .set(SapODataConstants.GEOSPATIAL_DIMENSION_FIELD_NAME, Geospatial.Dimension.GEOGRAPHY.name())
       .set(SapODataConstants.GEOSPATIAL_COORDINATES_FIELD_NAME, geographyCoordinates)
       .build();
 
     ODataEntity entity = ODataEntityBuilder.builder()
-      .setGeometryMultiPoint("geometry_multi_point", geometryCoordinates)
-      .setGeographyMultiPoint("geography_multi_point", geographyCoordinates)
+      .setGeometryMultiPoint("geometry_multi_point", Arrays.asList(Arrays.asList(1.0, 0.0), Arrays.asList(2.0, 1.0)))
+      .setGeographyMultiPoint("geography_multi_point", Arrays.asList(Arrays.asList(3.0, 1.0), Arrays.asList(4.0, 1.0)))
       .build();
 
     ODataEntryToRecordTransformer transformer = new ODataEntryToRecordTransformer(schema);
@@ -309,128 +290,210 @@ public class ODataEntryToRecordTransformerTest extends SapODataTestBase {
     StructuredRecord actualGeometryMultiPoint = transformed.get("geometry_multi_point");
     StructuredRecord actualGeographyMultiPoint = transformed.get("geography_multi_point");
 
-    Assert.assertNotNull(actualGeometryMultiPoint);
-    Assert.assertNotNull(actualGeographyMultiPoint);
-    Assert.assertEquals(expectedGeometryMultiPoint.<String>get(SapODataConstants.GEOSPATIAL_TYPE_FIELD_NAME),
-                        actualGeometryMultiPoint.get(SapODataConstants.GEOSPATIAL_TYPE_FIELD_NAME));
-    Assert.assertEquals(expectedGeometryMultiPoint.<List>get(SapODataConstants.GEOSPATIAL_COORDINATES_FIELD_NAME),
-                        actualGeometryMultiPoint.get(SapODataConstants.GEOSPATIAL_COORDINATES_FIELD_NAME));
-    Assert.assertEquals(expectedGeographyMultiPoint.<String>get(SapODataConstants.GEOSPATIAL_TYPE_FIELD_NAME),
-                        actualGeographyMultiPoint.get(SapODataConstants.GEOSPATIAL_TYPE_FIELD_NAME));
-    Assert.assertEquals(expectedGeographyMultiPoint.<List>get(SapODataConstants.GEOSPATIAL_COORDINATES_FIELD_NAME),
-                        actualGeographyMultiPoint.get(SapODataConstants.GEOSPATIAL_COORDINATES_FIELD_NAME));
+    Assert.assertEquals(expectedGeometryMultiPoint, actualGeometryMultiPoint);
+    Assert.assertEquals(expectedGeographyMultiPoint, actualGeographyMultiPoint);
   }
 
   @Test
   @SuppressWarnings("ConstantConditions")
-  public void testTransformOData4GeospatialPolygon() throws Exception {
+  public void testTransformOData4GeometryPolygon() throws Exception {
+    Schema polygonSchema = SapODataSchemas.polygonSchema("geometry_polygon");
+    Schema schema = Schema.recordOf("schema", Schema.Field.of("geometry_polygon", polygonSchema));
 
-    Schema schema = Schema.recordOf("schema",
-                                    Schema.Field.of("geometry_polygon", polygonSchema("geometry_polygon")),
-                                    Schema.Field.of("geography_polygon", polygonSchema("geography_polygon"))
+    List<StructuredRecord> exterior = Arrays.asList(
+      pointRecordOf(Geospatial.Dimension.GEOMETRY, 100.0, 0.0, 0.0),
+      pointRecordOf(Geospatial.Dimension.GEOMETRY, 110.0, 0.0, 0.0),
+      pointRecordOf(Geospatial.Dimension.GEOMETRY, 110.0, 1.0, 0.0),
+      pointRecordOf(Geospatial.Dimension.GEOMETRY, 100.0, 1.0, 0.0),
+      pointRecordOf(Geospatial.Dimension.GEOMETRY, 100.0, 0.0, 0.0)
     );
-
-    List<List<List<Double>>> coordinates = Arrays.asList(
-      // exterior
-      Arrays.asList(Arrays.asList(100.0, 0.0), Arrays.asList(110.0, 0.0),
-                    Arrays.asList(110.0, 1.0), Arrays.asList(100.0, 1.0),
-                    Arrays.asList(100.0, 0.0)),
-      // interior
-      Arrays.asList(Arrays.asList(100.2, 0.2), Arrays.asList(100.8, 0.2),
-                    Arrays.asList(100.8, 0.8), Arrays.asList(100.2, 0.8),
-                    Arrays.asList(100.2, 0.2))
+    List<StructuredRecord> interior = Arrays.asList(
+      pointRecordOf(Geospatial.Dimension.GEOMETRY, 100.2, 0.2, 0.0),
+      pointRecordOf(Geospatial.Dimension.GEOMETRY, 100.8, 0.2, 0.0),
+      pointRecordOf(Geospatial.Dimension.GEOMETRY, 100.8, 0.8, 0.0),
+      pointRecordOf(Geospatial.Dimension.GEOMETRY, 100.2, 0.8, 0.0),
+      pointRecordOf(Geospatial.Dimension.GEOMETRY, 100.2, 0.2, 0.0)
     );
-    StructuredRecord expectedGeometryPolygon = StructuredRecord.builder(polygonSchema("polygon-schema"))
-      .set(SapODataConstants.GEOSPATIAL_TYPE_FIELD_NAME, "Polygon")
-      .set(SapODataConstants.GEOSPATIAL_COORDINATES_FIELD_NAME, coordinates)
-      .build();
-
-    StructuredRecord expectedGeographyPolygon = StructuredRecord.builder(polygonSchema("polygon-schema"))
-      .set(SapODataConstants.GEOSPATIAL_TYPE_FIELD_NAME, "Polygon")
-      .set(SapODataConstants.GEOSPATIAL_COORDINATES_FIELD_NAME, coordinates)
-      .build();
+    StructuredRecord expectedGeometryPolygon = polygonRecordOf(Geospatial.Dimension.GEOMETRY, exterior, interior, 1);
 
     ODataEntity entity = ODataEntityBuilder.builder()
-      .setGeometryPolygon("geometry_polygon", coordinates)
-      .setGeographyPolygon("geography_polygon", coordinates)
+      .setGeometryPolygon(
+        "geometry_polygon",
+        // exterior
+        Arrays.asList(Arrays.asList(100.0, 0.0), Arrays.asList(110.0, 0.0), Arrays.asList(110.0, 1.0),
+                      Arrays.asList(100.0, 1.0), Arrays.asList(100.0, 0.0)),
+        // interior
+        Arrays.asList(Arrays.asList(100.2, 0.2), Arrays.asList(100.8, 0.2), Arrays.asList(100.8, 0.8),
+                      Arrays.asList(100.2, 0.8), Arrays.asList(100.2, 0.2))
+      )
       .build();
 
     ODataEntryToRecordTransformer transformer = new ODataEntryToRecordTransformer(schema);
     StructuredRecord transformed = transformer.transform(entity);
     StructuredRecord actualGeometryPolygon = transformed.get("geometry_polygon");
-    StructuredRecord actualGeographyPolygon = transformed.get("geography_polygon");
 
-    Assert.assertNotNull(actualGeometryPolygon);
-    Assert.assertNotNull(actualGeographyPolygon);
-    Assert.assertEquals(expectedGeometryPolygon.<String>get(SapODataConstants.GEOSPATIAL_TYPE_FIELD_NAME),
-                        actualGeometryPolygon.get(SapODataConstants.GEOSPATIAL_TYPE_FIELD_NAME));
-    Assert.assertEquals(expectedGeometryPolygon.<List>get(SapODataConstants.GEOSPATIAL_COORDINATES_FIELD_NAME),
-                        actualGeometryPolygon.get(SapODataConstants.GEOSPATIAL_COORDINATES_FIELD_NAME));
-    Assert.assertEquals(expectedGeographyPolygon.<String>get(SapODataConstants.GEOSPATIAL_TYPE_FIELD_NAME),
-                        actualGeographyPolygon.get(SapODataConstants.GEOSPATIAL_TYPE_FIELD_NAME));
-    Assert.assertEquals(expectedGeographyPolygon.<List>get(SapODataConstants.GEOSPATIAL_COORDINATES_FIELD_NAME),
-                        actualGeographyPolygon.get(SapODataConstants.GEOSPATIAL_COORDINATES_FIELD_NAME));
+    Assert.assertEquals(expectedGeometryPolygon, actualGeometryPolygon);
   }
 
   @Test
   @SuppressWarnings("ConstantConditions")
-  public void testTransformOData4GeospatialMultiLineString() throws Exception {
+  public void testTransformOData4GeographyPolygon() throws Exception {
+    Schema polygonSchema = SapODataSchemas.polygonSchema("geography_polygon");
+    Schema schema = Schema.recordOf("schema", Schema.Field.of("geography_polygon", polygonSchema));
 
-    Schema schema = Schema.recordOf("schema",
-                                    Schema.Field.of("geometry_multi_ls", multiLineStringSchema("geometry_multi_ls")),
-                                    Schema.Field.of("geography_multi_ls", multiLineStringSchema("geography_multi_ls"))
+    List<StructuredRecord> exterior = Arrays.asList(
+      pointRecordOf(Geospatial.Dimension.GEOGRAPHY, 100.0, 0.0, 0.0),
+      pointRecordOf(Geospatial.Dimension.GEOGRAPHY, 110.0, 0.0, 0.0),
+      pointRecordOf(Geospatial.Dimension.GEOGRAPHY, 110.0, 1.0, 0.0),
+      pointRecordOf(Geospatial.Dimension.GEOGRAPHY, 100.0, 1.0, 0.0),
+      pointRecordOf(Geospatial.Dimension.GEOGRAPHY, 100.0, 0.0, 0.0)
+    );
+    List<StructuredRecord> interior = Arrays.asList(
+      pointRecordOf(Geospatial.Dimension.GEOGRAPHY, 100.2, 0.2, 0.0),
+      pointRecordOf(Geospatial.Dimension.GEOGRAPHY, 100.8, 0.2, 0.0),
+      pointRecordOf(Geospatial.Dimension.GEOGRAPHY, 100.8, 0.8, 0.0),
+      pointRecordOf(Geospatial.Dimension.GEOGRAPHY, 100.2, 0.8, 0.0),
+      pointRecordOf(Geospatial.Dimension.GEOGRAPHY, 100.2, 0.2, 0.0)
+    );
+    StructuredRecord expectedGeographyPolygon = polygonRecordOf(Geospatial.Dimension.GEOGRAPHY, exterior, interior, 1);
+
+    ODataEntity entity = ODataEntityBuilder.builder()
+      .setGeographyPolygon(
+        "geography_polygon",
+        // exterior
+        Arrays.asList(Arrays.asList(100.0, 0.0), Arrays.asList(110.0, 0.0), Arrays.asList(110.0, 1.0),
+                      Arrays.asList(100.0, 1.0), Arrays.asList(100.0, 0.0)),
+        // interior
+        Arrays.asList(Arrays.asList(100.2, 0.2), Arrays.asList(100.8, 0.2), Arrays.asList(100.8, 0.8),
+                      Arrays.asList(100.2, 0.8), Arrays.asList(100.2, 0.2))
+      )
+      .build();
+
+    ODataEntryToRecordTransformer transformer = new ODataEntryToRecordTransformer(schema);
+    StructuredRecord transformed = transformer.transform(entity);
+    StructuredRecord actualGeographyPolygon = transformed.get("geography_polygon");
+
+    Assert.assertEquals(expectedGeographyPolygon, actualGeographyPolygon);
+  }
+
+  @Test
+  @SuppressWarnings("ConstantConditions")
+  public void testTransformOData4GeometryMultiLineString() throws Exception {
+    Schema multiLineStringSchema = SapODataSchemas.multiLineStringSchema("geometry_multi_ls");
+    Schema schema = Schema.recordOf("schema", Schema.Field.of("geometry_multi_ls", multiLineStringSchema));
+
+    List<StructuredRecord> firstLinePoints = Arrays.asList(
+      pointRecordOf(Geospatial.Dimension.GEOMETRY, 100.0, 0.0, 0.0),
+      pointRecordOf(Geospatial.Dimension.GEOMETRY, 110.0, 0.0, 0.0),
+      pointRecordOf(Geospatial.Dimension.GEOMETRY, 110.0, 1.0, 0.0),
+      pointRecordOf(Geospatial.Dimension.GEOMETRY, 100.0, 1.0, 0.0),
+      pointRecordOf(Geospatial.Dimension.GEOMETRY, 100.0, 0.0, 0.0)
+    );
+    List<StructuredRecord> secondLinePoints = Arrays.asList(
+      pointRecordOf(Geospatial.Dimension.GEOMETRY, 100.2, 0.2, 0.0),
+      pointRecordOf(Geospatial.Dimension.GEOMETRY, 100.8, 0.2, 0.0),
+      pointRecordOf(Geospatial.Dimension.GEOMETRY, 100.8, 0.8, 0.0),
+      pointRecordOf(Geospatial.Dimension.GEOMETRY, 100.2, 0.8, 0.0),
+      pointRecordOf(Geospatial.Dimension.GEOMETRY, 100.2, 0.2, 0.0)
     );
 
+    StructuredRecord firstLine = lineRecordOf(Geospatial.Dimension.GEOMETRY, firstLinePoints);
+    StructuredRecord secondLine = lineRecordOf(Geospatial.Dimension.GEOMETRY, secondLinePoints);
+    List<StructuredRecord> lines = Arrays.asList(firstLine, secondLine);
+    StructuredRecord expectedGeometryMultiLinesString = multilineStringRecordOf(Geospatial.Dimension.GEOMETRY, lines);
+
     List<List<List<Double>>> coordinates = Arrays.asList(
-      // exterior
       Arrays.asList(Arrays.asList(100.0, 0.0), Arrays.asList(110.0, 0.0),
                     Arrays.asList(110.0, 1.0), Arrays.asList(100.0, 1.0),
                     Arrays.asList(100.0, 0.0)),
-      // interior
       Arrays.asList(Arrays.asList(100.2, 0.2), Arrays.asList(100.8, 0.2),
                     Arrays.asList(100.8, 0.8), Arrays.asList(100.2, 0.8),
                     Arrays.asList(100.2, 0.2))
     );
-    StructuredRecord expectedGeometryMultiLS = StructuredRecord.builder(multiLineStringSchema("multi-ls-schema"))
-      .set(SapODataConstants.GEOSPATIAL_TYPE_FIELD_NAME, "MultiLineString")
-      .set(SapODataConstants.GEOSPATIAL_COORDINATES_FIELD_NAME, coordinates)
-      .build();
-
-    StructuredRecord expectedGeographyMultiLS = StructuredRecord.builder(multiLineStringSchema("multi-ls-schema"))
-      .set(SapODataConstants.GEOSPATIAL_TYPE_FIELD_NAME, "MultiLineString")
-      .set(SapODataConstants.GEOSPATIAL_COORDINATES_FIELD_NAME, coordinates)
-      .build();
-
     ODataEntity entity = ODataEntityBuilder.builder()
       .setGeometryMultiLineString("geometry_multi_ls", coordinates)
+      .build();
+
+    ODataEntryToRecordTransformer transformer = new ODataEntryToRecordTransformer(schema);
+    StructuredRecord transformed = transformer.transform(entity);
+    StructuredRecord actualGeometryMultiLineString = transformed.get("geometry_multi_ls");
+
+    Assert.assertEquals(expectedGeometryMultiLinesString, actualGeometryMultiLineString);
+  }
+
+  @Test
+  @SuppressWarnings("ConstantConditions")
+  public void testTransformOData4GeographyMultiLineString() throws Exception {
+    Schema multiLineStringSchema = SapODataSchemas.multiLineStringSchema("geography_multi_ls");
+    Schema schema = Schema.recordOf("schema", Schema.Field.of("geography_multi_ls", multiLineStringSchema));
+
+    List<StructuredRecord> firstLinePoints = Arrays.asList(
+      pointRecordOf(Geospatial.Dimension.GEOGRAPHY, 100.0, 0.0, 0.0),
+      pointRecordOf(Geospatial.Dimension.GEOGRAPHY, 110.0, 0.0, 0.0),
+      pointRecordOf(Geospatial.Dimension.GEOGRAPHY, 110.0, 1.0, 0.0),
+      pointRecordOf(Geospatial.Dimension.GEOGRAPHY, 100.0, 1.0, 0.0),
+      pointRecordOf(Geospatial.Dimension.GEOGRAPHY, 100.0, 0.0, 0.0)
+    );
+    List<StructuredRecord> secondLinePoints = Arrays.asList(
+      pointRecordOf(Geospatial.Dimension.GEOGRAPHY, 100.2, 0.2, 0.0),
+      pointRecordOf(Geospatial.Dimension.GEOGRAPHY, 100.8, 0.2, 0.0),
+      pointRecordOf(Geospatial.Dimension.GEOGRAPHY, 100.8, 0.8, 0.0),
+      pointRecordOf(Geospatial.Dimension.GEOGRAPHY, 100.2, 0.8, 0.0),
+      pointRecordOf(Geospatial.Dimension.GEOGRAPHY, 100.2, 0.2, 0.0)
+    );
+
+    StructuredRecord firstLine = lineRecordOf(Geospatial.Dimension.GEOGRAPHY, firstLinePoints);
+    StructuredRecord secondLine = lineRecordOf(Geospatial.Dimension.GEOGRAPHY, secondLinePoints);
+    List<StructuredRecord> lines = Arrays.asList(firstLine, secondLine);
+    StructuredRecord expectedGeographyMultiLinesString = multilineStringRecordOf(Geospatial.Dimension.GEOGRAPHY, lines);
+
+    List<List<List<Double>>> coordinates = Arrays.asList(
+      Arrays.asList(Arrays.asList(100.0, 0.0), Arrays.asList(110.0, 0.0),
+                    Arrays.asList(110.0, 1.0), Arrays.asList(100.0, 1.0),
+                    Arrays.asList(100.0, 0.0)),
+      Arrays.asList(Arrays.asList(100.2, 0.2), Arrays.asList(100.8, 0.2),
+                    Arrays.asList(100.8, 0.8), Arrays.asList(100.2, 0.8),
+                    Arrays.asList(100.2, 0.2))
+    );
+    ODataEntity entity = ODataEntityBuilder.builder()
       .setGeographyMultiLineString("geography_multi_ls", coordinates)
       .build();
 
     ODataEntryToRecordTransformer transformer = new ODataEntryToRecordTransformer(schema);
     StructuredRecord transformed = transformer.transform(entity);
-    StructuredRecord actualGeometryMultiLS = transformed.get("geometry_multi_ls");
-    StructuredRecord actualGeographyMultiLS = transformed.get("geography_multi_ls");
+    StructuredRecord actualGeographyMultiLineString = transformed.get("geography_multi_ls");
 
-    Assert.assertNotNull(actualGeometryMultiLS);
-    Assert.assertNotNull(actualGeographyMultiLS);
-    Assert.assertEquals(expectedGeometryMultiLS.<String>get(SapODataConstants.GEOSPATIAL_TYPE_FIELD_NAME),
-                        actualGeometryMultiLS.get(SapODataConstants.GEOSPATIAL_TYPE_FIELD_NAME));
-    Assert.assertEquals(expectedGeometryMultiLS.<List>get(SapODataConstants.GEOSPATIAL_COORDINATES_FIELD_NAME),
-                        actualGeometryMultiLS.get(SapODataConstants.GEOSPATIAL_COORDINATES_FIELD_NAME));
-    Assert.assertEquals(expectedGeographyMultiLS.<String>get(SapODataConstants.GEOSPATIAL_TYPE_FIELD_NAME),
-                        actualGeographyMultiLS.get(SapODataConstants.GEOSPATIAL_TYPE_FIELD_NAME));
-    Assert.assertEquals(expectedGeographyMultiLS.<List>get(SapODataConstants.GEOSPATIAL_COORDINATES_FIELD_NAME),
-                        actualGeographyMultiLS.get(SapODataConstants.GEOSPATIAL_COORDINATES_FIELD_NAME));
+    Assert.assertEquals(expectedGeographyMultiLinesString, actualGeographyMultiLineString);
   }
 
   @Test
   @SuppressWarnings("ConstantConditions")
-  public void testTransformOData4GeospatialMultiPolygon() throws Exception {
+  public void testTransformOData4GeometryMultiPolygon() throws Exception {
+    Schema multiPolygonSchema = SapODataSchemas.multiPolygonSchema("geometry_multi_polygon");
+    Schema schema = Schema.recordOf("schema", Schema.Field.of("geometry_multi_polygon", multiPolygonSchema));
 
-    Schema schema = Schema.recordOf(
-      "schema",
-      Schema.Field.of("geometry_multi_polygon", multiPolygonSchema("geometry_multi_polygon")),
-      Schema.Field.of("geography_multi_polygon", multiPolygonSchema("geography_multi_polygon")));
+    List<StructuredRecord> exterior = Arrays.asList(
+      pointRecordOf(Geospatial.Dimension.GEOMETRY, 100.0, 0.0, 0.0),
+      pointRecordOf(Geospatial.Dimension.GEOMETRY, 110.0, 0.0, 0.0),
+      pointRecordOf(Geospatial.Dimension.GEOMETRY, 110.0, 1.0, 0.0),
+      pointRecordOf(Geospatial.Dimension.GEOMETRY, 100.0, 1.0, 0.0),
+      pointRecordOf(Geospatial.Dimension.GEOMETRY, 100.0, 0.0, 0.0)
+    );
+    List<StructuredRecord> interior = Arrays.asList(
+      pointRecordOf(Geospatial.Dimension.GEOMETRY, 100.2, 0.2, 0.0),
+      pointRecordOf(Geospatial.Dimension.GEOMETRY, 100.8, 0.2, 0.0),
+      pointRecordOf(Geospatial.Dimension.GEOMETRY, 100.8, 0.8, 0.0),
+      pointRecordOf(Geospatial.Dimension.GEOMETRY, 100.2, 0.8, 0.0),
+      pointRecordOf(Geospatial.Dimension.GEOMETRY, 100.2, 0.2, 0.0)
+    );
+    StructuredRecord firstPolygon = polygonRecordOf(Geospatial.Dimension.GEOMETRY, exterior, interior, 1);
+    StructuredRecord secondPolygon = polygonRecordOf(Geospatial.Dimension.GEOMETRY, exterior, interior, 1);
+
+    StructuredRecord expectedGeometryMultiPolygon = StructuredRecord.builder(multiPolygonSchema)
+      .set(SapODataConstants.GEOSPATIAL_TYPE_FIELD_NAME, "MultiPolygon")
+      .set(SapODataConstants.GEOSPATIAL_DIMENSION_FIELD_NAME, Geospatial.Dimension.GEOMETRY.name())
+      .set(SapODataConstants.GEOSPATIAL_COORDINATES_FIELD_NAME, Arrays.asList(firstPolygon, secondPolygon))
+      .build();
 
     List<List<List<List<Double>>>> coordinates = Arrays.asList(
       // first polygon
@@ -457,46 +520,22 @@ public class ODataEntryToRecordTransformerTest extends SapODataTestBase {
                       Arrays.asList(100.2, 0.2))
       )
     );
-
-    StructuredRecord expectedGeometryMultiPolygon = StructuredRecord.builder(multiPolygonSchema("polygon-schema"))
-      .set(SapODataConstants.GEOSPATIAL_TYPE_FIELD_NAME, "MultiPolygon")
-      .set(SapODataConstants.GEOSPATIAL_COORDINATES_FIELD_NAME, coordinates)
-      .build();
-
-    StructuredRecord expectedGeographyMultiPolygon = StructuredRecord.builder(multiPolygonSchema("polygon-schema"))
-      .set(SapODataConstants.GEOSPATIAL_TYPE_FIELD_NAME, "MultiPolygon")
-      .set(SapODataConstants.GEOSPATIAL_COORDINATES_FIELD_NAME, coordinates)
-      .build();
-
     ODataEntity entity = ODataEntityBuilder.builder()
       .setGeometryMultiPolygon("geometry_multi_polygon", coordinates)
-      .setGeographyMultiPolygon("geography_multi_polygon", coordinates)
       .build();
 
     ODataEntryToRecordTransformer transformer = new ODataEntryToRecordTransformer(schema);
     StructuredRecord transformed = transformer.transform(entity);
     StructuredRecord actualGeometryMultiPolygon = transformed.get("geometry_multi_polygon");
-    StructuredRecord actualGeographyMultiPolygon = transformed.get("geography_multi_polygon");
 
-    Assert.assertNotNull(actualGeometryMultiPolygon);
-    Assert.assertNotNull(actualGeographyMultiPolygon);
-    Assert.assertEquals(expectedGeometryMultiPolygon.<String>get(SapODataConstants.GEOSPATIAL_TYPE_FIELD_NAME),
-                        actualGeometryMultiPolygon.get(SapODataConstants.GEOSPATIAL_TYPE_FIELD_NAME));
-    Assert.assertEquals(expectedGeometryMultiPolygon.<List>get(SapODataConstants.GEOSPATIAL_COORDINATES_FIELD_NAME),
-                        actualGeometryMultiPolygon.get(SapODataConstants.GEOSPATIAL_COORDINATES_FIELD_NAME));
-    Assert.assertEquals(expectedGeographyMultiPolygon.<String>get(SapODataConstants.GEOSPATIAL_TYPE_FIELD_NAME),
-                        actualGeographyMultiPolygon.get(SapODataConstants.GEOSPATIAL_TYPE_FIELD_NAME));
-    Assert.assertEquals(expectedGeographyMultiPolygon.<List>get(SapODataConstants.GEOSPATIAL_COORDINATES_FIELD_NAME),
-                        actualGeographyMultiPolygon.get(SapODataConstants.GEOSPATIAL_COORDINATES_FIELD_NAME));
+    Assert.assertEquals(expectedGeometryMultiPolygon, actualGeometryMultiPolygon);
   }
 
   @Test
   @SuppressWarnings("ConstantConditions")
   public void testTransformOData4GeometryCollection() throws Exception {
-
-    Schema schema = Schema.recordOf("schema",
-                                    Schema.Field.of("geometry_collection", collectionSchema("geometry_collection"))
-    );
+    Schema collectionSchema = SapODataSchemas.collectionSchema("geometry_collection");
+    Schema schema = Schema.recordOf("schema", Schema.Field.of("geometry_collection", collectionSchema));
 
     GeospatialCollection expectedGeometryCollection = geospatialCollection(Geospatial.Dimension.GEOMETRY);
     ODataEntity entity = ODataEntityBuilder.builder()
@@ -532,10 +571,8 @@ public class ODataEntryToRecordTransformerTest extends SapODataTestBase {
   @Test
   @SuppressWarnings("ConstantConditions")
   public void testTransformOData4GeographyCollection() throws Exception {
-
-    Schema schema = Schema.recordOf("schema",
-                                    Schema.Field.of("geography_collection", collectionSchema("geography_collection"))
-    );
+    Schema collectionSchema = SapODataSchemas.collectionSchema("geometry_collection");
+    Schema schema = Schema.recordOf("schema", Schema.Field.of("geography_collection", collectionSchema));
 
     GeospatialCollection expectedGeometryCollection = geospatialCollection(Geospatial.Dimension.GEOGRAPHY);
     ODataEntity entity = ODataEntityBuilder.builder()
@@ -566,45 +603,6 @@ public class ODataEntryToRecordTransformerTest extends SapODataTestBase {
     Assert.assertEquals(1, multiPoints.size());
     Assert.assertEquals(1, multiLs.size());
     Assert.assertEquals(1, multiPolygons.size());
-  }
-
-  private GeospatialCollection geospatialCollection(Geospatial.Dimension dimension) {
-    SRID srid = SRID.valueOf("4326");
-
-    List<Point> lineStringPoints = Arrays.asList(pointOf(dimension, 0.0, 1.0), pointOf(dimension, 0.0, 1.0));
-    LineString lineString = new LineString(dimension, srid, lineStringPoints);
-
-
-    List<Point> interior = Arrays.asList(pointOf(dimension, 100.2, 0.2), pointOf(dimension, 100.8, 0.2),
-                                         pointOf(dimension, 100.8, 0.8), pointOf(dimension, 100.2, 0.8),
-                                         pointOf(dimension, 100.2, 0.2));
-
-    List<Point> exterior = Arrays.asList(pointOf(dimension, 100.0, 0.0), pointOf(dimension, 110.0, 0.0),
-                                         pointOf(dimension, 110.0, 1.0), pointOf(dimension, 100.0, 1.0),
-                                         pointOf(dimension, 100.0, 0.0));
-
-    Polygon polygon = new Polygon(dimension, srid, interior, exterior);
-    MultiPoint multiPoint = new MultiPoint(dimension, srid, lineStringPoints);
-    MultiLineString multiLineString = new MultiLineString(dimension, srid, Collections.singletonList(lineString));
-    MultiPolygon multiPolygon = new MultiPolygon(dimension, srid, Collections.singletonList(polygon));
-
-    List<Geospatial> geospatials = new ArrayList<>();
-    geospatials.add(pointOf(dimension, 0.0, 1.0));
-    geospatials.add(lineString);
-    geospatials.add(polygon);
-    geospatials.add(multiPoint);
-    geospatials.add(multiLineString);
-    geospatials.add(multiPolygon);
-
-    return new GeospatialCollection(dimension, srid, geospatials);
-  }
-
-  private Point pointOf(Geospatial.Dimension dimension, double x, double y) {
-    Point point = new Point(dimension, SRID.valueOf("4326"));
-    point.setX(x);
-    point.setY(y);
-
-    return point;
   }
 
   @Test
@@ -653,5 +651,85 @@ public class ODataEntryToRecordTransformerTest extends SapODataTestBase {
                         actualStream.get(SapODataConstants.STREAM_READ_LINK_FIELD_NAME));
     Assert.assertEquals(expectedStream.<String>get(SapODataConstants.STREAM_EDIT_LINK_FIELD_NAME),
                         actualStream.get(SapODataConstants.STREAM_EDIT_LINK_FIELD_NAME));
+  }
+
+
+  private GeospatialCollection geospatialCollection(Geospatial.Dimension dimension) {
+    SRID srid = SRID.valueOf("4326");
+
+    List<Point> lineStringPoints = Arrays.asList(pointOf(dimension, 0.0, 1.0), pointOf(dimension, 0.0, 1.0));
+    LineString lineString = new LineString(dimension, srid, lineStringPoints);
+
+
+    List<Point> interior = Arrays.asList(pointOf(dimension, 100.2, 0.2), pointOf(dimension, 100.8, 0.2),
+                                         pointOf(dimension, 100.8, 0.8), pointOf(dimension, 100.2, 0.8),
+                                         pointOf(dimension, 100.2, 0.2));
+
+    List<Point> exterior = Arrays.asList(pointOf(dimension, 100.0, 0.0), pointOf(dimension, 110.0, 0.0),
+                                         pointOf(dimension, 110.0, 1.0), pointOf(dimension, 100.0, 1.0),
+                                         pointOf(dimension, 100.0, 0.0));
+
+    Polygon polygon = new Polygon(dimension, srid, interior, exterior);
+    MultiPoint multiPoint = new MultiPoint(dimension, srid, lineStringPoints);
+    MultiLineString multiLineString = new MultiLineString(dimension, srid, Collections.singletonList(lineString));
+    MultiPolygon multiPolygon = new MultiPolygon(dimension, srid, Collections.singletonList(polygon));
+
+    List<Geospatial> geospatials = new ArrayList<>();
+    geospatials.add(pointOf(dimension, 0.0, 1.0));
+    geospatials.add(lineString);
+    geospatials.add(polygon);
+    geospatials.add(multiPoint);
+    geospatials.add(multiLineString);
+    geospatials.add(multiPolygon);
+
+    return new GeospatialCollection(dimension, srid, geospatials);
+  }
+
+  private Point pointOf(Geospatial.Dimension dimension, double x, double y) {
+    Point point = new Point(dimension, SRID.valueOf("4326"));
+    point.setX(x);
+    point.setY(y);
+
+    return point;
+  }
+
+  private StructuredRecord pointRecordOf(Geospatial.Dimension dimension, double x, double y, double z) {
+    Schema pointSchema = SapODataSchemas.pointSchema("point-record");
+    return StructuredRecord.builder(pointSchema)
+      .set(SapODataConstants.GEOSPATIAL_DIMENSION_FIELD_NAME, dimension.name())
+      .set(SapODataConstants.POINT_X_FIELD_NAME, x)
+      .set(SapODataConstants.POINT_Y_FIELD_NAME, y)
+      .set(SapODataConstants.POINT_Z_FIELD_NAME, z)
+      .build();
+  }
+
+  private StructuredRecord lineRecordOf(Geospatial.Dimension dimension, List<StructuredRecord> points) {
+    Schema lineStringSchema = SapODataSchemas.lineStringSchema("line-string-schema");
+    return StructuredRecord.builder(lineStringSchema)
+      .set(SapODataConstants.GEOSPATIAL_TYPE_FIELD_NAME, "LineString")
+      .set(SapODataConstants.GEOSPATIAL_DIMENSION_FIELD_NAME, dimension.name())
+      .set(SapODataConstants.GEOSPATIAL_COORDINATES_FIELD_NAME, points)
+      .build();
+  }
+
+  private StructuredRecord polygonRecordOf(Geospatial.Dimension dimension, List<StructuredRecord> exterior,
+                                           List<StructuredRecord> interior, int numberOfInteriorRings) {
+    Schema polygonSchema = SapODataSchemas.polygonSchema("polygon-record");
+    return StructuredRecord.builder(polygonSchema)
+      .set(SapODataConstants.GEOSPATIAL_TYPE_FIELD_NAME, "Polygon")
+      .set(SapODataConstants.GEOSPATIAL_DIMENSION_FIELD_NAME, dimension.name())
+      .set(SapODataConstants.POLYGON_EXTERIOR_FIELD_NAME, exterior)
+      .set(SapODataConstants.POLYGON_INTERIOR_FIELD_NAME, interior)
+      .set(SapODataConstants.POLYGON_NUMBER_OF_INTERIOR_RINGS_FIELD_NAME, numberOfInteriorRings)
+      .build();
+  }
+
+  private StructuredRecord multilineStringRecordOf(Geospatial.Dimension dimension, List<StructuredRecord> lineStrings) {
+    Schema multiLineStringSchema = SapODataSchemas.multiLineStringSchema("multi_line_string");
+    return StructuredRecord.builder(multiLineStringSchema)
+      .set(SapODataConstants.GEOSPATIAL_TYPE_FIELD_NAME, "MultiLineString")
+      .set(SapODataConstants.GEOSPATIAL_DIMENSION_FIELD_NAME, dimension.name())
+      .set(SapODataConstants.GEOSPATIAL_COORDINATES_FIELD_NAME, lineStrings)
+      .build();
   }
 }
