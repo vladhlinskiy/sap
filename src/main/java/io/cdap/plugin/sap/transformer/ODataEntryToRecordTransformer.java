@@ -43,7 +43,6 @@ import java.math.MathContext;
 import java.sql.Timestamp;
 import java.time.Instant;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Calendar;
 import java.util.GregorianCalendar;
 import java.util.Iterator;
@@ -176,17 +175,17 @@ public class ODataEntryToRecordTransformer {
     Geospatial.Type geoType = geospatial.getGeoType();
     switch (geoType) {
       case POINT:
-        return geospatialRecordOf("Point", extractCoordinates((Point) geospatial), schema);
+        return extractPoint((Point) geospatial, schema);
       case LINESTRING:
-        return geospatialRecordOf("LineString", extractCoordinates((LineString) geospatial), schema);
+        return extractLineString((LineString) geospatial, schema);
       case POLYGON:
-        return geospatialRecordOf("Polygon", extractCoordinates((Polygon) geospatial), schema);
+        return extractPolygon((Polygon) geospatial, schema);
       case MULTIPOINT:
-        return geospatialRecordOf("MultiPoint", extractCoordinates((MultiPoint) geospatial), schema);
+        return extractMultiPoint((MultiPoint) geospatial, schema);
       case MULTILINESTRING:
-        return geospatialRecordOf("MultiLineString", extractCoordinates((MultiLineString) geospatial), schema);
+        return extractMultiLineString((MultiLineString) geospatial, schema);
       case MULTIPOLYGON:
-        return geospatialRecordOf("MultiPolygon", extractCoordinates((MultiPolygon) geospatial), schema);
+        return extractMultiPolygon((MultiPolygon) geospatial, schema);
       case GEOSPATIALCOLLECTION:
         return extractGeospatialCollectionRecord(fieldName, (GeospatialCollection) geospatial, schema);
       default:
@@ -207,27 +206,33 @@ public class ODataEntryToRecordTransformer {
     collection.iterator().forEachRemaining(g -> {
       switch (g.getGeoType()) {
         case POINT:
-          Schema pointSchema = schema.getField("points").getSchema().getComponentSchema();
+          Schema.Field pointsField = schema.getField(SapODataConstants.GEO_COLLECTION_POINTS_FIELD_NAME);
+          Schema pointSchema = pointsField.getSchema().getComponentSchema();
           points.add(extractGeospatial(fieldName, g, pointSchema));
           break;
         case LINESTRING:
-          Schema lineStringSchema = schema.getField("lineStrings").getSchema().getComponentSchema();
+          Schema.Field lineStringsField = schema.getField(SapODataConstants.GEO_COLLECTION_LINE_STRINGS_FIELD_NAME);
+          Schema lineStringSchema = lineStringsField.getSchema().getComponentSchema();
           lineStrings.add(extractGeospatial(fieldName, g, lineStringSchema));
           break;
         case POLYGON:
-          Schema polygonSchema = schema.getField("polygons").getSchema().getComponentSchema();
+          Schema.Field polygonsField = schema.getField(SapODataConstants.GEO_COLLECTION_POLYGONS_FIELD_NAME);
+          Schema polygonSchema = polygonsField.getSchema().getComponentSchema();
           polygons.add(extractGeospatial(fieldName, g, polygonSchema));
           break;
         case MULTIPOINT:
-          Schema multiPointSchema = schema.getField("multiPoints").getSchema().getComponentSchema();
+          Schema.Field multiPointsField = schema.getField(SapODataConstants.GEO_COLLECTION_MULTI_POINTS_FIELD_NAME);
+          Schema multiPointSchema = multiPointsField.getSchema().getComponentSchema();
           multiPoints.add(extractGeospatial(fieldName, g, multiPointSchema));
           break;
         case MULTILINESTRING:
-          Schema multiLineStringSchema = schema.getField("multiLineStrings").getSchema().getComponentSchema();
+          Schema.Field multiLsField = schema.getField(SapODataConstants.GEO_COLLECTION_MULTI_LINE_STRINGS_FIELD_NAME);
+          Schema multiLineStringSchema = multiLsField.getSchema().getComponentSchema();
           multiLineStrings.add(extractGeospatial(fieldName, g, multiLineStringSchema));
           break;
         case MULTIPOLYGON:
-          Schema multiPolygonSchema = schema.getField("multiPolygons").getSchema().getComponentSchema();
+          Schema.Field multiPolygonsField = schema.getField(SapODataConstants.GEO_COLLECTION_MULTI_POLYGONS_FIELD_NAME);
+          Schema multiPolygonSchema = multiPolygonsField.getSchema().getComponentSchema();
           multiPolygons.add(extractGeospatial(fieldName, g, multiPolygonSchema));
           break;
       }
@@ -235,6 +240,7 @@ public class ODataEntryToRecordTransformer {
 
     return StructuredRecord.builder(schema)
       .set(SapODataConstants.GEOSPATIAL_TYPE_FIELD_NAME, "GeometryCollection")
+      .set(SapODataConstants.GEOSPATIAL_DIMENSION_FIELD_NAME, collection.getDimension().name())
       .set(SapODataConstants.GEO_COLLECTION_POINTS_FIELD_NAME, points)
       .set(SapODataConstants.GEO_COLLECTION_LINE_STRINGS_FIELD_NAME, lineStrings)
       .set(SapODataConstants.GEO_COLLECTION_POLYGONS_FIELD_NAME, polygons)
@@ -244,80 +250,102 @@ public class ODataEntryToRecordTransformer {
       .build();
   }
 
-  private StructuredRecord geospatialRecordOf(String typeName, List coordinates, Schema schema) {
+  private StructuredRecord extractPoint(Point point, Schema schema) {
     return StructuredRecord.builder(schema)
-      .set(SapODataConstants.GEOSPATIAL_TYPE_FIELD_NAME, typeName)
+      .set(SapODataConstants.GEOSPATIAL_DIMENSION_FIELD_NAME, point.getDimension().name())
+      .set(SapODataConstants.POINT_X_FIELD_NAME, point.getX())
+      .set(SapODataConstants.POINT_Y_FIELD_NAME, point.getY())
+      .set(SapODataConstants.POINT_Z_FIELD_NAME, point.getZ())
+      .build();
+  }
+
+  private StructuredRecord extractLineString(LineString lineString, Schema schema) {
+    Schema.Field coordinatesField = schema.getField(SapODataConstants.GEOSPATIAL_COORDINATES_FIELD_NAME);
+    Schema pointSchema = coordinatesField.getSchema().getComponentSchema();
+    List<StructuredRecord> coordinates = new ArrayList<>();
+    Iterator<Point> pointIterator = lineString.iterator();
+    if (pointIterator != null) {
+      pointIterator.forEachRemaining(p -> coordinates.add(extractPoint(p, pointSchema)));
+    }
+    // "LineString" and "MultiPoint" schemas are the same. Type name is required to distinguish them
+    return StructuredRecord.builder(schema)
+      .set(SapODataConstants.GEOSPATIAL_TYPE_FIELD_NAME, "LineString")
+      .set(SapODataConstants.GEOSPATIAL_DIMENSION_FIELD_NAME, lineString.getDimension().name())
       .set(SapODataConstants.GEOSPATIAL_COORDINATES_FIELD_NAME, coordinates)
       .build();
   }
 
-  private List<Double> extractCoordinates(Point point) {
-    return Arrays.asList(point.getX(), point.getY());
-  }
-
-  private List<List<Double>> extractCoordinates(LineString lineString) {
-    List<List<Double>> coordinates = new ArrayList<>();
-    Iterator<Point> pointIterator = lineString.iterator();
-    if (pointIterator == null) {
-      return coordinates;
-    }
-    pointIterator.forEachRemaining(p -> coordinates.add(extractCoordinates(p)));
-
-    return coordinates;
-  }
-
-  private List<List<List<Double>>> extractCoordinates(Polygon polygon) {
-    List<List<List<Double>>> coordinates = new ArrayList<>();
+  private StructuredRecord extractPolygon(Polygon polygon, Schema schema) {
+    Schema.Field exteriorField = schema.getField(SapODataConstants.POLYGON_EXTERIOR_FIELD_NAME);
+    Schema pointSchema = exteriorField.getSchema().getComponentSchema();
+    List<StructuredRecord> exterior = new ArrayList<>();
     if (polygon.getExterior() != null && polygon.getExterior().iterator() != null) {
-      List<List<Double>> exteriorCoordinates = new ArrayList<>();
-      polygon.getExterior().iterator().forEachRemaining(p -> exteriorCoordinates.add(extractCoordinates(p)));
-      coordinates.add(exteriorCoordinates);
+      polygon.getExterior().iterator().forEachRemaining(point -> exterior.add(extractPoint(point, pointSchema)));
     }
-
+    List<StructuredRecord> interior = new ArrayList<>();
     for (int i = 0; i < polygon.getNumberOfInteriorRings(); i++) {
       Iterator<Point> interiorIterator = polygon.getInterior(i).iterator();
       if (interiorIterator == null) {
         continue;
       }
-      List<List<Double>> interiorCoordinates = new ArrayList<>();
-      interiorIterator.forEachRemaining(p -> interiorCoordinates.add(extractCoordinates(p)));
-      coordinates.add(interiorCoordinates);
+      interiorIterator.forEachRemaining(point -> interior.add(extractPoint(point, pointSchema)));
     }
 
-    return coordinates;
+    return StructuredRecord.builder(schema)
+      .set(SapODataConstants.GEOSPATIAL_TYPE_FIELD_NAME, "Polygon")
+      .set(SapODataConstants.GEOSPATIAL_DIMENSION_FIELD_NAME, polygon.getDimension().name())
+      .set(SapODataConstants.POLYGON_EXTERIOR_FIELD_NAME, exterior)
+      .set(SapODataConstants.POLYGON_INTERIOR_FIELD_NAME, interior)
+      .set(SapODataConstants.POLYGON_NUMBER_OF_INTERIOR_RINGS_FIELD_NAME, polygon.getNumberOfInteriorRings())
+      .build();
   }
 
-  private List<List<Double>> extractCoordinates(MultiPoint multiPoint) {
-    List<List<Double>> coordinates = new ArrayList<>();
+  private StructuredRecord extractMultiPoint(MultiPoint multiPoint, Schema schema) {
+    Schema.Field coordinatesField = schema.getField(SapODataConstants.GEOSPATIAL_COORDINATES_FIELD_NAME);
+    Schema pointSchema = coordinatesField.getSchema().getComponentSchema();
+    List<StructuredRecord> coordinates = new ArrayList<>();
     Iterator<Point> pointIterator = multiPoint.iterator();
-    if (pointIterator == null) {
-      return coordinates;
+    if (pointIterator != null) {
+      pointIterator.forEachRemaining(p -> coordinates.add(extractPoint(p, pointSchema)));
     }
-    pointIterator.forEachRemaining(p -> coordinates.add(extractCoordinates(p)));
-
-    return coordinates;
+    // "LineString" and "MultiPoint" schemas are the same. Type name is required to distinguish them
+    return StructuredRecord.builder(schema)
+      .set(SapODataConstants.GEOSPATIAL_TYPE_FIELD_NAME, "MultiPoint")
+      .set(SapODataConstants.GEOSPATIAL_DIMENSION_FIELD_NAME, multiPoint.getDimension().name())
+      .set(SapODataConstants.GEOSPATIAL_COORDINATES_FIELD_NAME, coordinates)
+      .build();
   }
 
-  private List<List<List<Double>>> extractCoordinates(MultiLineString multiLineString) {
-    List<List<List<Double>>> coordinates = new ArrayList<>();
+  private StructuredRecord extractMultiLineString(MultiLineString multiLineString, Schema schema) {
+    Schema.Field coordinatesField = schema.getField(SapODataConstants.GEOSPATIAL_COORDINATES_FIELD_NAME);
+    Schema lineStringSchema = coordinatesField.getSchema().getComponentSchema();
+    List<StructuredRecord> coordinates = new ArrayList<>();
     Iterator<LineString> lineStringIterator = multiLineString.iterator();
-    if (lineStringIterator == null) {
-      return coordinates;
+    if (lineStringIterator != null) {
+      lineStringIterator.forEachRemaining(ls -> coordinates.add(extractLineString(ls, lineStringSchema)));
     }
-    lineStringIterator.forEachRemaining(ls -> coordinates.add(extractCoordinates(ls)));
 
-    return coordinates;
+    return StructuredRecord.builder(schema)
+      .set(SapODataConstants.GEOSPATIAL_TYPE_FIELD_NAME, "MultiLineString")
+      .set(SapODataConstants.GEOSPATIAL_DIMENSION_FIELD_NAME, multiLineString.getDimension().name())
+      .set(SapODataConstants.GEOSPATIAL_COORDINATES_FIELD_NAME, coordinates)
+      .build();
   }
 
-  private List<List<List<List<Double>>>> extractCoordinates(MultiPolygon multiPolygon) {
-    List<List<List<List<Double>>>> coordinates = new ArrayList<>();
+  private StructuredRecord extractMultiPolygon(MultiPolygon multiPolygon, Schema schema) {
+    Schema.Field coordinatesField = schema.getField(SapODataConstants.GEOSPATIAL_COORDINATES_FIELD_NAME);
+    Schema polygonSchema = coordinatesField.getSchema().getComponentSchema();
+    List<StructuredRecord> coordinates = new ArrayList<>();
     Iterator<Polygon> polygonIterator = multiPolygon.iterator();
-    if (polygonIterator == null) {
-      return coordinates;
+    if (polygonIterator != null) {
+      polygonIterator.forEachRemaining(polygon -> coordinates.add(extractPolygon(polygon, polygonSchema)));
     }
-    polygonIterator.forEachRemaining(polygon -> coordinates.add(extractCoordinates(polygon)));
 
-    return coordinates;
+    return StructuredRecord.builder(schema)
+      .set(SapODataConstants.GEOSPATIAL_TYPE_FIELD_NAME, "MultiPolygon")
+      .set(SapODataConstants.GEOSPATIAL_DIMENSION_FIELD_NAME, multiPolygon.getDimension().name())
+      .set(SapODataConstants.GEOSPATIAL_COORDINATES_FIELD_NAME, coordinates)
+      .build();
   }
 
   private String extractDateTimeOffset(String fieldName, Object value) {
@@ -388,14 +416,14 @@ public class ODataEntryToRecordTransformer {
    * Extracts {@link BigDecimal} value of 'EDM.Decimal' since EDM.Decimal can be represented by multiple Java types
    * in Olingo V4: {@link BigDecimal}, {@link BigInteger}, {@link Double}, {@link Float}, {@link Byte}, {@link Short},
    * {@link Integer}, {@link Long}.
-   *
+   * <p>
    * For more information see:
    * <a href="https://olingo.apache.org/javadoc/odata4/org/apache/olingo/commons/api/edm/EdmPrimitiveType.html">
-   *   EdmPrimitiveType
+   * EdmPrimitiveType
    * </a>
    *
-   * @param value 'EDM.Decimal' value of one of the following Java types {@link BigDecimal}, {@link BigInteger},
-   * {@link Double}, {@link Float}, {@link Byte}, {@link Short}, {@link Integer}, {@link Long}.
+   * @param value  'EDM.Decimal' value of one of the following Java types {@link BigDecimal}, {@link BigInteger},
+   *               {@link Double}, {@link Float}, {@link Byte}, {@link Short}, {@link Integer}, {@link Long}.
    * @param schema field schema.
    * @return {@link BigDecimal} representation of the provided 'EDM.Decimal' value.
    */

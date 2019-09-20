@@ -21,6 +21,7 @@ import com.google.common.collect.ImmutableMap;
 import io.cdap.cdap.api.data.format.StructuredRecord;
 import io.cdap.cdap.api.data.schema.Schema;
 import io.cdap.plugin.sap.SapODataConstants;
+import io.cdap.plugin.sap.SapODataSchemas;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
@@ -51,24 +52,24 @@ public class SapOData4SourceETLTest extends BaseSapODataSourceETLTest {
     Schema.Field.of("Int64", Schema.of(Schema.Type.LONG)),
     Schema.Field.of("SByte", Schema.of(Schema.Type.INT)),
     Schema.Field.of("Single", Schema.of(Schema.Type.FLOAT)),
-    Schema.Field.of("Stream", streamSchema("Stream")),
+    Schema.Field.of("Stream", SapODataSchemas.streamSchema("Stream")),
     Schema.Field.of("Single", Schema.of(Schema.Type.FLOAT)),
     Schema.Field.of("String", Schema.of(Schema.Type.STRING)),
     Schema.Field.of("TimeOfDay", Schema.of(Schema.LogicalType.TIME_MICROS)),
-    Schema.Field.of("GeographyPoint", pointSchema("GeographyPoint")),
-    Schema.Field.of("GeographyLineString", lineStringSchema("GeographyLineString")),
-    Schema.Field.of("GeographyPolygon", polygonSchema("GeographyPolygon")),
-    Schema.Field.of("GeographyMultiPoint", multiPointSchema("GeographyMultiPoint")),
-    Schema.Field.of("GeographyMultiLineString", multiLineStringSchema("GeographyMultiLineString")),
-    Schema.Field.of("GeographyMultiPolygon", multiPolygonSchema("GeographyMultiPolygon")),
-    Schema.Field.of("GeographyCollection", collectionSchema("GeographyCollection")),
-    Schema.Field.of("GeometryPoint", pointSchema("GeometryPoint")),
-    Schema.Field.of("GeometryLineString", lineStringSchema("GeometryLineString")),
-    Schema.Field.of("GeometryPolygon", polygonSchema("GeometryPolygon")),
-    Schema.Field.of("GeometryMultiPoint", multiPointSchema("GeometryMultiPoint")),
-    Schema.Field.of("GeometryMultiLineString", multiLineStringSchema("GeometryMultiLineString")),
-    Schema.Field.of("GeometryMultiPolygon", multiPolygonSchema("GeometryMultiPolygon")),
-    Schema.Field.of("GeometryCollection", collectionSchema("GeometryCollection"))
+    Schema.Field.of("GeographyPoint", SapODataSchemas.pointSchema("GeographyPoint")),
+    Schema.Field.of("GeographyLineString", SapODataSchemas.lineStringSchema("GeographyLineString")),
+    Schema.Field.of("GeographyPolygon", SapODataSchemas.polygonSchema("GeographyPolygon")),
+    Schema.Field.of("GeographyMultiPoint", SapODataSchemas.multiPointSchema("GeographyMultiPoint")),
+    Schema.Field.of("GeographyMultiLineString", SapODataSchemas.multiLineStringSchema("GeographyMultiLineString")),
+    Schema.Field.of("GeographyMultiPolygon", SapODataSchemas.multiPolygonSchema("GeographyMultiPolygon")),
+    Schema.Field.of("GeographyCollection", SapODataSchemas.collectionSchema("GeographyCollection")),
+    Schema.Field.of("GeometryPoint", SapODataSchemas.pointSchema("GeometryPoint")),
+    Schema.Field.of("GeometryLineString", SapODataSchemas.lineStringSchema("GeometryLineString")),
+    Schema.Field.of("GeometryPolygon", SapODataSchemas.polygonSchema("GeometryPolygon")),
+    Schema.Field.of("GeometryMultiPoint", SapODataSchemas.multiPointSchema("GeometryMultiPoint")),
+    Schema.Field.of("GeometryMultiLineString", SapODataSchemas.multiLineStringSchema("GeometryMultiLineString")),
+    Schema.Field.of("GeometryMultiPolygon", SapODataSchemas.multiPolygonSchema("GeometryMultiPolygon")),
+    Schema.Field.of("GeometryCollection", SapODataSchemas.collectionSchema("GeometryCollection"))
   );
 
   @Before

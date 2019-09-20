@@ -69,90 +69,110 @@ https://www.odata.org/documentation/odata-version-2-0/overview/
 OData V4 Data Types Mapping
 ----------
 
-    | OData V4 Data Type              | CDAP Schema Data Type | Comment                                           |
-    | ------------------------------- | --------------------- | ------------------------------------------------- |
-    | Edm.Binary                      | bytes                 |                                                   |
-    | Edm.Boolean                     | boolean               |                                                   |
-    | Edm.Byte                        | int                   |                                                   |
-    | Edm.Date                        | timestamp             |                                                   |
-    | Edm.DateTimeOffset              | string                | Timestamp string in the following format:         |
-    |                                 |                       | 2019-08-29T14:52:08.155+02:00                     |
-    | Edm.Decimal                     | decimal               |                                                   |
-    | Edm.Double                      | double                |                                                   |
-    | Edm.Duration                    | string                | String formatted as P12DT23H59M59.999999999999S   |
-    | Edm.Guid                        | string                |                                                   |
-    | Edm.Int16                       | int                   |                                                   |
-    | Edm.Int32                       | int                   |                                                   |
-    | Edm.Int64                       | long                  |                                                   |
-    | Edm.SByte                       | int                   |                                                   |
-    | Edm.Single                      | float                 |                                                   |
-    | Edm.Stream                      | record                | Record of string fields:                          |
-    |                                 |                       | "mediaReadLink" - link to read the stream         |
-    |                                 |                       | "mediaEditLink" - link to edit/update the stream  |
-    |                                 |                       | "mediaContentType" - media type of the stream     |
-    |                                 |                       | "mediaEtag" - HTTP ETag of the stream             |
-    | Edm.String                      | string                |                                                   |
-    | Edm.TimeOfDay                   | time                  |                                                   |
-    | Edm.GeographyPoint              | record                | Record of the following fields:                   |
-    |                                 |                       | "type" - type of GeoJSON object                   |
-    |                                 |                       | "coordinates" - array of coordinates              |
-    | Edm.GeographyLineString         | record                | Record of the following fields:                   |
-    |                                 |                       | "type" - type of GeoJSON object                   |
-    |                                 |                       | "coordinates" - array of coordinates              |
-    | Edm.GeographyPolygon            | record                | Record of the following fields:                   |
-    |                                 |                       | "type" - type of GeoJSON object                   |
-    |                                 |                       | "coordinates" - array of coordinates              |
-    | Edm.GeographyMultiPoint         | record                | Record of the following fields:                   |
-    |                                 |                       | "type" - type of GeoJSON object                   |
-    |                                 |                       | "coordinates" - array of coordinates              |
-    | Edm.GeographyMultiLineString    | record                | Record of the following fields:                   |
-    |                                 |                       | "type" - type of GeoJSON object                   |
-    |                                 |                       | "coordinates" - array of coordinates              |
-    | Edm.GeographyMultiPolygon       | record                | Record of the following fields:                   |
-    |                                 |                       | "type" - type of GeoJSON object                   |
-    |                                 |                       | "coordinates" - array of coordinates              |
-    | Edm.GeographyCollection         | record                | Record of the following fields:                   |
-    |                                 |                       | "type" - type of GeoJSON object                   |
-    |                                 |                       | "points" - array of geospatial "Point" values     |
-    |                                 |                       | "lineStrings" - array of geospatial "LineString"  |
-    |                                 |                       | values                                            |
-    |                                 |                       | "polygons" - array of geospatial "Polygon" values |
-    |                                 |                       | "multiPoints" - array of geospatial "MultiPoint"  |
-    |                                 |                       | values                                            |
-    |                                 |                       | "multiLineStrings" - array of geospatial          |
-    |                                 |                       | "MultiLineString" values                          |
-    |                                 |                       | "multiPolygons" - array of geospatial             |
-    |                                 |                       | "MultiPolygon" values                             |
-    | Edm.GeometryPoint               | record                | Record of the following fields:                   |
-    |                                 |                       | "type" - type of GeoJSON object                   |
-    |                                 |                       | "coordinates" - array of coordinates              |
-    | Edm.GeometryLineString          | record                | Record of the following fields:                   |
-    |                                 |                       | "type" - type of GeoJSON object                   |
-    |                                 |                       | "coordinates" - array of coordinates              |
-    | Edm.GeometryPolygon             | record                | Record of the following fields:                   |
-    |                                 |                       | "type" - type of GeoJSON object                   |
-    |                                 |                       | "coordinates" - array of coordinates              |
-    | Edm.GeometryMultiPoint          | record                | Record of the following fields:                   |
-    |                                 |                       | "type" - type of GeoJSON object                   |
-    |                                 |                       | "coordinates" - array of coordinates              |
-    | Edm.GeometryMultiLineString     | record                | Record of the following fields:                   |
-    |                                 |                       | "type" - type of GeoJSON object                   |
-    |                                 |                       | "coordinates" - array of coordinates              |
-    | Edm.GeometryMultiPolygon        | record                | Record of the following fields:                   |
-    |                                 |                       | "type" - type of GeoJSON object                   |
-    |                                 |                       | "coordinates" - array of coordinates              |
-    | Edm.GeometryCollection          | record                | Record of the following fields:                   |
-    |                                 |                       | "type" - type of GeoJSON object                   |
-    |                                 |                       | "points" - array of geospatial "Point" values     |
-    |                                 |                       | "lineStrings" - array of geospatial "LineString"  |
-    |                                 |                       | values                                            |
-    |                                 |                       | "polygons" - array of geospatial "Polygon" values |
-    |                                 |                       | "multiPoints" - array of geospatial "MultiPoint"  |
-    |                                 |                       | values                                            |
-    |                                 |                       | "multiLineStrings" - array of geospatial          |
-    |                                 |                       | "MultiLineString" values                          |
-    |                                 |                       | "multiPolygons" - array of geospatial             |
-    |                                 |                       | "MultiPolygon" values                             |
+    | OData V4 Data Type              | CDAP Schema Data Type | Comment                                             |
+    | ------------------------------- | --------------------- | --------------------------------------------------- |
+    | Edm.Binary                      | bytes                 |                                                     |
+    | Edm.Boolean                     | boolean               |                                                     |
+    | Edm.Byte                        | int                   |                                                     |
+    | Edm.Date                        | timestamp             |                                                     |
+    | Edm.DateTimeOffset              | string                | Timestamp string in the following format:           |
+    |                                 |                       | 2019-08-29T14:52:08.155+02:00                       |
+    | Edm.Decimal                     | decimal               |                                                     |
+    | Edm.Double                      | double                |                                                     |
+    | Edm.Duration                    | string                | String formatted as P12DT23H59M59.999999999999S     |
+    | Edm.Guid                        | string                |                                                     |
+    | Edm.Int16                       | int                   |                                                     |
+    | Edm.Int32                       | int                   |                                                     |
+    | Edm.Int64                       | long                  |                                                     |
+    | Edm.SByte                       | int                   |                                                     |
+    | Edm.Single                      | float                 |                                                     |
+    | Edm.Stream                      | record                | Record of string fields:                            |
+    |                                 |                       | "mediaReadLink" - link to read the stream           |
+    |                                 |                       | "mediaEditLink" - link to edit/update the stream    |
+    |                                 |                       | "mediaContentType" - media type of the stream       |
+    |                                 |                       | "mediaEtag" - HTTP ETag of the stream               |
+    | Edm.String                      | string                |                                                     |
+    | Edm.TimeOfDay                   | time                  |                                                     |
+    | Edm.GeographyPoint              | record                | Record of the following fields:                     |
+    |                                 |                       | "dimenstion" - "GEOGRAPHY" dimension                |
+    |                                 |                       | "x" - coordinate on X axis                          |
+    |                                 |                       | "y" - coordinate on Y axis                          |
+    |                                 |                       | "z" - coordinate on Z axis                          |
+    | Edm.GeographyLineString         | record                | Record of the following fields:                     |
+    |                                 |                       | "type" - type of GeoJSON object                     |
+    |                                 |                       | "dimenstion" - "GEOGRAPHY" dimension                |
+    |                                 |                       | "coordinates" - array of points                     |
+    | Edm.GeographyPolygon            | record                | Record of the following fields:                     |
+    |                                 |                       | "type" - type of GeoJSON object                     |
+    |                                 |                       | "dimenstion" - "GEOGRAPHY" dimension                |
+    |                                 |                       | "exterior" - array of exterior points               |
+    |                                 |                       | "interior" - array of exterior points               |
+    |                                 |                       | "numberOfInteriorRings" - number of interior rings  |
+    | Edm.GeographyMultiPoint         | record                | Record of the following fields:                     |
+    |                                 |                       | "type" - type of GeoJSON object                     |
+    |                                 |                       | "dimenstion" - "GEOGRAPHY" dimension                |
+    |                                 |                       | "coordinates" - array of ponts                      |
+    | Edm.GeographyMultiLineString    | record                | Record of the following fields:                     |
+    |                                 |                       | "type" - type of GeoJSON object                     |
+    |                                 |                       | "dimenstion" - "GEOGRAPHY" dimension                |
+    |                                 |                       | "coordinates" - array of line strings               |
+    | Edm.GeographyMultiPolygon       | record                | Record of the following fields:                     |
+    |                                 |                       | "type" - type of GeoJSON object                     |
+    |                                 |                       | "dimenstion" - "GEOGRAPHY" dimension                |
+    |                                 |                       | "coordinates" - array of polygons                   |
+    | Edm.GeographyCollection         | record                | Record of the following fields:                     |
+    |                                 |                       | "type" - type of GeoJSON object                     |
+    |                                 |                       | "dimenstion" - "GEOGRAPHY" dimension                |
+    |                                 |                       | "points" - array of geospatial "Point" values       |
+    |                                 |                       | "lineStrings" - array of geospatial "LineString"    |
+    |                                 |                       | values                                              |
+    |                                 |                       | "polygons" - array of geospatial "Polygon" values   |
+    |                                 |                       | "multiPoints" - array of geospatial "MultiPoint"    |
+    |                                 |                       | values                                              |
+    |                                 |                       | "multiLineStrings" - array of geospatial            |
+    |                                 |                       | "MultiLineString" values                            |
+    |                                 |                       | "multiPolygons" - array of geospatial               |
+    |                                 |                       | "MultiPolygon" values                               |
+    | Edm.GeometryPoint               | record                | Record of the following fields:                     |
+    |                                 |                       | "dimenstion" - "GEOMENTRY" dimension                |
+    |                                 |                       | "x" - coordinate on X axis                          |
+    |                                 |                       | "y" - coordinate on Y axis                          |
+    |                                 |                       | "z" - coordinate on Z axis                          |
+    | Edm.GeometryLineString          | record                | Record of the following fields:                     |
+    |                                 |                       | "type" - type of GeoJSON object                     |
+    |                                 |                       | "dimenstion" - "GEOMENTRY" dimension                |
+    |                                 |                       | "coordinates" - array of points                     |
+    | Edm.GeometryPolygon             | record                | Record of the following fields:                     |
+    |                                 |                       | "type" - type of GeoJSON object                     |
+    |                                 |                       | "dimenstion" - "GEOMENTRY" dimension                |
+    |                                 |                       | "exterior" - array of exterior points               |
+    |                                 |                       | "interior" - array of exterior points               |
+    |                                 |                       | "numberOfInteriorRings" - number of interior rings  |
+    | Edm.GeometryMultiPoint          | record                | Record of the following fields:                     |
+    |                                 |                       | "type" - type of GeoJSON object                     |
+    |                                 |                       | "dimenstion" - "GEOMENTRY" dimension                |
+    |                                 |                       | "coordinates" - array of ponts                      |
+    | Edm.GeometryMultiLineString     | record                | Record of the following fields:                     |
+    |                                 |                       | "type" - type of GeoJSON object                     |
+    |                                 |                       | "dimenstion" - "GEOMENTRY" dimension                |
+    |                                 |                       | "coordinates" - array of line strings               |
+    | Edm.GeometryMultiPolygon        | record                | Record of the following fields:                     |
+    |                                 |                       | "type" - type of GeoJSON object                     |
+    |                                 |                       | "dimenstion" - "GEOMENTRY" dimension                |
+    |                                 |                       | "coordinates" - array of polygons                   |
+    | Edm.GeometryCollection          | record                | Record of the following fields:                     |
+    |                                 |                       | "type" - type of GeoJSON object                     |
+    |                                 |                       | "dimenstion" - "GEOMENTRY" dimension                |
+    |                                 |                       | "points" - array of geospatial "Point" values       |
+    |                                 |                       | "lineStrings" - array of geospatial "LineString"    |
+    |                                 |                       | values                                              |
+    |                                 |                       | "polygons" - array of geospatial "Polygon" values   |
+    |                                 |                       | "multiPoints" - array of geospatial "MultiPoint"    |
+    |                                 |                       | values                                              |
+    |                                 |                       | "multiLineStrings" - array of geospatial            |
+    |                                 |                       | "MultiLineString" values                            |
+    |                                 |                       | "multiPolygons" - array of geospatial               |
+    |                                 |                       | "MultiPolygon" values                               |
 
 
 For more information, see [OData V4 Primitive Data Types], [The GeoJSON Format].

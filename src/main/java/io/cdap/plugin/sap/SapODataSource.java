@@ -177,31 +177,31 @@ public class SapODataSource extends BatchSource<NullWritable, ODataEntity, Struc
         return Schema.of(Schema.Type.STRING);
       case "GeographyPoint":
       case "GeometryPoint":
-        return pointSchema(propertyMetadata);
+        return SapODataSchemas.pointSchema(propertyMetadata.getName());
       case "GeographyLineString":
       case "GeometryLineString":
-        return lineStringSchema(propertyMetadata);
+        return SapODataSchemas.lineStringSchema(propertyMetadata.getName());
       case "GeographyPolygon":
       case "GeometryPolygon":
-        return polygonSchema(propertyMetadata);
+        return SapODataSchemas.polygonSchema(propertyMetadata.getName());
       case "GeographyMultiPoint":
       case "GeometryMultiPoint":
-        return multiPointSchema(propertyMetadata);
+        return SapODataSchemas.multiPointSchema(propertyMetadata.getName());
       case "GeographyMultiLineString":
       case "GeometryMultiLineString":
-        return multiLineStringSchema(propertyMetadata);
+        return SapODataSchemas.multiLineStringSchema(propertyMetadata.getName());
       case "GeographyMultiPolygon":
       case "GeometryMultiPolygon":
-        return multiPolygonSchema(propertyMetadata);
+        return SapODataSchemas.multiPolygonSchema(propertyMetadata.getName());
       case "GeographyCollection":
       case "GeometryCollection":
-        return collectionSchema(propertyMetadata);
+        return SapODataSchemas.collectionSchema(propertyMetadata.getName());
       case "Date":
         return Schema.of(Schema.LogicalType.TIMESTAMP_MICROS);
       case "Duration":
         return Schema.of(Schema.Type.STRING);
       case "Stream":
-        return streamSchema(propertyMetadata);
+        return SapODataSchemas.streamSchema(propertyMetadata.getName());
       case "TimeOfDay":
         return Schema.of(Schema.LogicalType.TIME_MICROS);
       default:
@@ -209,82 +209,5 @@ public class SapODataSource extends BatchSource<NullWritable, ODataEntity, Struc
         throw new InvalidStageException(String.format("Field '%s' is of unsupported type '%s'.",
                                                       propertyMetadata.getName(), propertyMetadata.getEdmTypeName()));
     }
-  }
-
-  private Schema streamSchema(PropertyMetadata propertyMetadata) {
-    return Schema.recordOf(propertyMetadata.getName() + "-stream-record",
-                           Schema.Field.of(SapODataConstants.STREAM_ETAG_FIELD_NAME,
-                                           Schema.nullableOf(Schema.of(Schema.Type.STRING))),
-                           Schema.Field.of(SapODataConstants.STREAM_CONTENT_TYPE_FIELD_NAME,
-                                           Schema.nullableOf(Schema.of(Schema.Type.STRING))),
-                           Schema.Field.of(SapODataConstants.STREAM_READ_LINK_FIELD_NAME,
-                                           Schema.nullableOf(Schema.of(Schema.Type.STRING))),
-                           Schema.Field.of(SapODataConstants.STREAM_EDIT_LINK_FIELD_NAME,
-                                           Schema.nullableOf(Schema.of(Schema.Type.STRING))));
-  }
-
-  private Schema pointSchema(PropertyMetadata propertyMetadata) {
-    return Schema.recordOf(propertyMetadata.getName() + "-point-record",
-                           Schema.Field.of(SapODataConstants.GEOSPATIAL_TYPE_FIELD_NAME, Schema.of(Schema.Type.STRING)),
-                           Schema.Field.of(SapODataConstants.GEOSPATIAL_COORDINATES_FIELD_NAME,
-                                           Schema.arrayOf(Schema.of(Schema.Type.DOUBLE))));
-  }
-
-  private Schema lineStringSchema(PropertyMetadata propertyMetadata) {
-    return Schema.recordOf(propertyMetadata.getName() + "-line-string-record",
-                           Schema.Field.of(SapODataConstants.GEOSPATIAL_TYPE_FIELD_NAME, Schema.of(Schema.Type.STRING)),
-                           Schema.Field.of(SapODataConstants.GEOSPATIAL_COORDINATES_FIELD_NAME,
-                                           Schema.arrayOf(Schema.arrayOf(Schema.of(Schema.Type.DOUBLE)))));
-  }
-
-  private Schema polygonSchema(PropertyMetadata propertyMetadata) {
-    return Schema.recordOf(
-      propertyMetadata.getName() + "-polygon-record",
-      Schema.Field.of(SapODataConstants.GEOSPATIAL_TYPE_FIELD_NAME, Schema.of(Schema.Type.STRING)),
-      Schema.Field.of(SapODataConstants.GEOSPATIAL_COORDINATES_FIELD_NAME,
-                      Schema.arrayOf(Schema.arrayOf(Schema.arrayOf(Schema.of(Schema.Type.DOUBLE))))));
-  }
-
-  private Schema multiPointSchema(PropertyMetadata propertyMetadata) {
-    return Schema.recordOf(
-      propertyMetadata.getName() + "-multi-point-record",
-      Schema.Field.of(SapODataConstants.GEOSPATIAL_TYPE_FIELD_NAME, Schema.of(Schema.Type.STRING)),
-      Schema.Field.of(SapODataConstants.GEOSPATIAL_COORDINATES_FIELD_NAME,
-                      Schema.arrayOf(Schema.arrayOf(Schema.of(Schema.Type.DOUBLE)))));
-  }
-
-  private Schema multiLineStringSchema(PropertyMetadata propertyMetadata) {
-    return Schema.recordOf(
-      propertyMetadata.getName() + "-multi-line-string-record",
-      Schema.Field.of(SapODataConstants.GEOSPATIAL_TYPE_FIELD_NAME, Schema.of(Schema.Type.STRING)),
-      Schema.Field.of(SapODataConstants.GEOSPATIAL_COORDINATES_FIELD_NAME,
-                      Schema.arrayOf(Schema.arrayOf(Schema.arrayOf(Schema.of(Schema.Type.DOUBLE))))));
-  }
-
-  private Schema multiPolygonSchema(PropertyMetadata propertyMetadata) {
-    return Schema.recordOf(
-      propertyMetadata.getName() + "-multi-polygon-record",
-      Schema.Field.of(SapODataConstants.GEOSPATIAL_TYPE_FIELD_NAME, Schema.of(Schema.Type.STRING)),
-      Schema.Field.of(SapODataConstants.GEOSPATIAL_COORDINATES_FIELD_NAME,
-                      Schema.arrayOf(Schema.arrayOf(Schema.arrayOf(Schema.arrayOf(Schema.of(Schema.Type.DOUBLE)))))));
-  }
-
-  private Schema collectionSchema(PropertyMetadata propertyMetadata) {
-    return Schema.recordOf(propertyMetadata.getName() + "-collection-record",
-                           Schema.Field.of(SapODataConstants.GEOSPATIAL_TYPE_FIELD_NAME, Schema.of(Schema.Type.STRING)),
-                           Schema.Field.of(SapODataConstants.GEO_COLLECTION_POINTS_FIELD_NAME,
-                                           Schema.arrayOf(pointSchema(propertyMetadata))),
-                           Schema.Field.of(SapODataConstants.GEO_COLLECTION_LINE_STRINGS_FIELD_NAME,
-                                           Schema.arrayOf(lineStringSchema(propertyMetadata))),
-                           Schema.Field.of(SapODataConstants.GEO_COLLECTION_POLYGONS_FIELD_NAME,
-                                           Schema.arrayOf(polygonSchema(propertyMetadata))),
-                           Schema.Field.of(SapODataConstants.GEO_COLLECTION_MULTI_POINTS_FIELD_NAME,
-                                           Schema.arrayOf(multiPointSchema(propertyMetadata))),
-                           Schema.Field.of(SapODataConstants.GEO_COLLECTION_MULTI_LINE_STRINGS_FIELD_NAME,
-                                           Schema.arrayOf(multiLineStringSchema(propertyMetadata))),
-                           Schema.Field.of(SapODataConstants.GEO_COLLECTION_MULTI_POLYGONS_FIELD_NAME,
-                                           Schema.arrayOf(multiPolygonSchema(propertyMetadata)))
-                           // nested collections can not be supported since metadata does not contain component info
-    );
   }
 }
