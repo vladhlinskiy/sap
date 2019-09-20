@@ -62,10 +62,16 @@ public class SapODataConstants {
 
   /**
    * OData 4 geospatial data types are mapped to CDAP record with fields
-   * "{@value SapODataConstants#GEOSPATIAL_TYPE_FIELD_NAME}" for type and
-   * "{@value SapODataConstants#GEOSPATIAL_COORDINATES_FIELD_NAME}" for list of coordinates.
+   * "{@value SapODataConstants#GEOSPATIAL_TYPE_FIELD_NAME}" for type. For instance, "LineString"
+   * and "MultiPoint" schemas are the same. Type name is required to distinguish them.
    */
   public static final String GEOSPATIAL_TYPE_FIELD_NAME = "type";
+
+  /**
+   * OData 4 geospatial data types are mapped to CDAP record with fields
+   * "{@value SapODataConstants#GEOSPATIAL_DIMENSION_FIELD_NAME}" for dimension.
+   */
+  public static final String GEOSPATIAL_DIMENSION_FIELD_NAME = "dimension";
 
   /**
    * OData 4 geospatial data types are mapped to CDAP record with fields
@@ -73,6 +79,48 @@ public class SapODataConstants {
    * "{@value SapODataConstants#GEOSPATIAL_COORDINATES_FIELD_NAME}" for list of coordinates.
    */
   public static final String GEOSPATIAL_COORDINATES_FIELD_NAME = "coordinates";
+
+  /**
+   * OData 4 geospatial "Point" is mapped to CDAP record with
+   * "{@value SapODataConstants#POINT_X_FIELD_NAME}",
+   * "{@value SapODataConstants#POINT_Y_FIELD_NAME}" and
+   * "{@value SapODataConstants#POINT_Z_FIELD_NAME}" fields for coordinates.
+   */
+  public static final String POINT_X_FIELD_NAME = "x";
+
+  /**
+   * OData 4 geospatial "Point" is mapped to CDAP record with
+   * "{@value SapODataConstants#POINT_X_FIELD_NAME}",
+   * "{@value SapODataConstants#POINT_Y_FIELD_NAME}" and
+   * "{@value SapODataConstants#POINT_Z_FIELD_NAME}" fields for coordinates.
+   */
+  public static final String POINT_Y_FIELD_NAME = "y";
+
+  /**
+   * OData 4 geospatial "Point" is mapped to CDAP record with
+   * "{@value SapODataConstants#POINT_X_FIELD_NAME}",
+   * "{@value SapODataConstants#POINT_Y_FIELD_NAME}" and
+   * "{@value SapODataConstants#POINT_Z_FIELD_NAME}" fields for coordinates.
+   */
+  public static final String POINT_Z_FIELD_NAME = "z";
+
+  /**
+   * OData 4 geospatial "Polygon" is mapped to CDAP record with
+   * "{@value SapODataConstants#POLYGON_EXTERIOR_FIELD_NAME}" field for the exterior coordinates.
+   */
+  public static final String POLYGON_EXTERIOR_FIELD_NAME = "exterior";
+
+  /**
+   * OData 4 geospatial "Polygon" is mapped to CDAP record with
+   * "{@value SapODataConstants#POLYGON_INTERIOR_FIELD_NAME}" field for the interior coordinates.
+   */
+  public static final String POLYGON_INTERIOR_FIELD_NAME = "interior";
+
+  /**
+   * OData 4 geospatial "Polygon" is mapped to CDAP record with
+   * "{@value SapODataConstants#POLYGON_NUMBER_OF_INTERIOR_RINGS_FIELD_NAME}" field for the number of interior rings.
+   */
+  public static final String POLYGON_NUMBER_OF_INTERIOR_RINGS_FIELD_NAME = "numberOfInteriorRings";
 
   /**
    * OData 4 Stream type mapped to CDAP record with field
