@@ -29,12 +29,13 @@ import java.util.stream.Collectors;
 /**
  * Provides handy methods to construct an annotation {@link StructuredRecord} instance for testing.
  */
-public final class AnnotationRecordBuilder {
+public class AnnotationRecordBuilder {
 
   private final String fieldName;
   private String fullyQualifiedTermName;
   private String qualifier;
   private StructuredRecord expression;
+  private Map<String, StructuredRecord> annotations = new HashMap<>();
 
   private AnnotationRecordBuilder(String fieldName) {
     this.fieldName = fieldName;
@@ -99,17 +100,43 @@ public final class AnnotationRecordBuilder {
     return new RecordExpressionBuilder();
   }
 
+  public AnnotationRecordBuilder withAnnotation(String name, StructuredRecord annotation) {
+    annotations.put(name, annotation);
+    return this;
+  }
+
   public StructuredRecord build() {
-    Schema annotationSchema = SapODataSchemas.annotationSchema(fieldName, expression.getSchema());
+    if (annotations.isEmpty()) {
+      Schema annotationSchema = SapODataSchemas.annotationSchema(fieldName, expression.getSchema(), null);
+      return StructuredRecord.builder(annotationSchema)
+        .set(SapODataConstants.ANNOTATION_TERM_FIELD_NAME, fullyQualifiedTermName)
+        .set(SapODataConstants.ANNOTATION_EXPRESSION_FIELD_NAME, expression)
+        .set(SapODataConstants.ANNOTATION_QUALIFIER_FIELD_NAME, qualifier)
+        .build();
+    }
+
+    List<Schema.Field> fields = annotations.entrySet().stream()
+      .map(entry -> Schema.Field.of(entry.getKey(), entry.getValue().getSchema()))
+      .collect(Collectors.toList());
+    Schema annotationsSchema = Schema.recordOf(fieldName + "-nested-annotations", fields);
+    StructuredRecord.Builder nestedAnnotationsBuilder = StructuredRecord.builder(annotationsSchema);
+    annotations.entrySet().forEach(entry -> nestedAnnotationsBuilder.set(entry.getKey(), entry.getValue()));
+
+    Schema annotationSchema = SapODataSchemas.annotationSchema(fieldName, expression.getSchema(), annotationsSchema);
     return StructuredRecord.builder(annotationSchema)
       .set(SapODataConstants.ANNOTATION_TERM_FIELD_NAME, fullyQualifiedTermName)
       .set(SapODataConstants.ANNOTATION_EXPRESSION_FIELD_NAME, expression)
       .set(SapODataConstants.ANNOTATION_QUALIFIER_FIELD_NAME, qualifier)
+      .set(SapODataConstants.NESTED_ANNOTATIONS_FIELD_NAME, nestedAnnotationsBuilder.build())
       .build();
   }
 
   protected StructuredRecord singleValueExpression(String expressionName, Object value) {
-    return StructuredRecord.builder(SapODataSchemas.singleValueExpressionSchema(fieldName))
+    return singleValueExpression(fieldName, expressionName, value);
+  }
+
+  protected StructuredRecord singleValueExpression(String recordName, String expressionName, Object value) {
+    return StructuredRecord.builder(SapODataSchemas.singleValueExpressionSchema(recordName))
       .set(SapODataConstants.EXPRESSION_NAME_FIELD_NAME, expressionName)
       .set(SapODataConstants.EXPRESSION_VALUE_FIELD_NAME, value)
       .build();
@@ -126,7 +153,8 @@ public final class AnnotationRecordBuilder {
     }
 
     public ApplyExpressionBuilder withConstantExpression(EdmExpression.EdmExpressionType type, String value) {
-      StructuredRecord expression = singleValueExpression(type.name(), value);
+      String recordName = String.format("%s_%d", type.name(), expressions.size());
+      StructuredRecord expression = singleValueExpression(recordName, type.name(), value);
       expressions.add(expression);
       return this;
     }
@@ -143,12 +171,11 @@ public final class AnnotationRecordBuilder {
     }
 
     private StructuredRecord buildApplyParametersRecord() {
-      // TODO avoid duplication with Source
       List<Schema.Field> fields = new ArrayList<>();
       for (int i = 0; i < expressions.size(); i++) {
         StructuredRecord e = expressions.get(i);
         String expressionName = e.get(SapODataConstants.EXPRESSION_NAME_FIELD_NAME);
-        String parameterName = String.format("%d-%s", i, expressionName);
+        String parameterName = String.format("%s_%d", expressionName, i);
         Schema.Field field = Schema.Field.of(parameterName, e.getSchema());
         fields.add(field);
       }
@@ -158,7 +185,7 @@ public final class AnnotationRecordBuilder {
       for (int i = 0; i < expressions.size(); i++) {
         StructuredRecord e = expressions.get(i);
         String expressionName = e.get(SapODataConstants.EXPRESSION_NAME_FIELD_NAME);
-        String parameterName = String.format("%d-%s", i, expressionName);
+        String parameterName = String.format("%s_%d", expressionName, i);
         builder.set(parameterName, e);
       }
 
@@ -310,6 +337,7 @@ public final class AnnotationRecordBuilder {
 
     private String type;
     private Map<String, StructuredRecord> properties = new HashMap<>();
+    private Map<String, StructuredRecord> annotations = new HashMap<>();
 
     public RecordExpressionBuilder withProperty(String name, EdmExpression.EdmExpressionType type, String value) {
       properties.put(name, singleValueExpression(type.name(), value));
@@ -321,14 +349,40 @@ public final class AnnotationRecordBuilder {
       return this;
     }
 
+    public RecordExpressionBuilder withAnnotation(String name, StructuredRecord annotation) {
+      this.annotations.put(name, annotation);
+      return this;
+    }
+
     public AnnotationRecordBuilder add() {
       StructuredRecord properties = buildPropertyValuesRecord(this.properties);
-      Schema expressionSchema = SapODataSchemas.recordExpressionSchema(fieldName, properties.getSchema());
+
+      if (annotations.isEmpty()) {
+        Schema expressionSchema = SapODataSchemas.recordExpressionSchema(fieldName, properties.getSchema(), null);
+        expression = StructuredRecord.builder(expressionSchema)
+          .set(SapODataConstants.EXPRESSION_NAME_FIELD_NAME, "Record")
+          .set(SapODataConstants.EXPRESSION_TYPE_FIELD_NAME, type)
+          .set(SapODataConstants.EXPRESSION_PROPERTY_VALUES_FIELD_NAME, properties)
+          .build();
+        return AnnotationRecordBuilder.this;
+      }
+
+      List<Schema.Field> fields = annotations.entrySet().stream()
+        .map(entry -> Schema.Field.of(entry.getKey(), entry.getValue().getSchema()))
+        .collect(Collectors.toList());
+      Schema annotationsSchema = Schema.recordOf(fieldName + "-nested-annotations", fields);
+      StructuredRecord.Builder nestedAnnotationsBuilder = StructuredRecord.builder(annotationsSchema);
+      annotations.entrySet().forEach(entry -> nestedAnnotationsBuilder.set(entry.getKey(), entry.getValue()));
+
+      Schema expressionSchema = SapODataSchemas.recordExpressionSchema(fieldName, properties.getSchema(),
+                                                                       annotationsSchema);
       expression = StructuredRecord.builder(expressionSchema)
         .set(SapODataConstants.EXPRESSION_NAME_FIELD_NAME, "Record")
         .set(SapODataConstants.EXPRESSION_TYPE_FIELD_NAME, type)
         .set(SapODataConstants.EXPRESSION_PROPERTY_VALUES_FIELD_NAME, properties)
+        .set(SapODataConstants.NESTED_ANNOTATIONS_FIELD_NAME, nestedAnnotationsBuilder.build())
         .build();
+
       return AnnotationRecordBuilder.this;
     }
 
