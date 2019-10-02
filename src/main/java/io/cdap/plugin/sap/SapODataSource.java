@@ -45,6 +45,7 @@ import io.cdap.plugin.sap.transformer.ODataEntryToRecordTransformer;
 import io.cdap.plugin.sap.transformer.ODataEntryToRecordWithMetadataTransformer;
 import org.apache.hadoop.io.NullWritable;
 import org.apache.olingo.commons.api.edm.annotation.EdmExpression;
+import org.apache.olingo.commons.api.edm.provider.annotation.CsdlApply;
 import org.apache.olingo.commons.api.edm.provider.annotation.CsdlExpression;
 import org.apache.olingo.commons.api.edm.provider.annotation.CsdlIf;
 import org.apache.olingo.commons.api.edm.provider.annotation.CsdlIsOf;
@@ -58,7 +59,9 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.function.Function;
 import java.util.stream.Collectors;
+import javax.annotation.Nullable;
 
 /**
  * Plugin returns records from SAP OData service specified by URL.
@@ -171,9 +174,10 @@ public class SapODataSource extends BatchSource<NullWritable, ODataEntity, Struc
   private Schema.Field getSchemaField(PropertyMetadata propertyMetadata, boolean includeAnnotations) {
     Schema nonNullableSchema = convertPropertyType(propertyMetadata);
     Schema schema = propertyMetadata.isNullable() ? Schema.nullableOf(nonNullableSchema) : nonNullableSchema;
+    List<ODataAnnotation> annotations = propertyMetadata.getAnnotations();
 
-    return includeAnnotations && propertyMetadata.getAnnotations() != null ?
-      getFieldWithAnnotations(propertyMetadata, schema) : Schema.Field.of(propertyMetadata.getName(), schema);
+    return includeAnnotations &&  annotations != null && !annotations.isEmpty()
+      ? getFieldWithAnnotations(propertyMetadata, schema) : Schema.Field.of(propertyMetadata.getName(), schema);
   }
 
   private Schema.Field getFieldWithAnnotations(PropertyMetadata propertyMetadata, Schema valueSchema) {
@@ -201,14 +205,33 @@ public class SapODataSource extends BatchSource<NullWritable, ODataEntity, Struc
     OData4Annotation annotation = (OData4Annotation) oDataAnnotation;
     CsdlExpression expression = annotation.getExpression();
     Schema expressionSchema = expressionToFieldSchema(fieldName, expression);
-    return SapODataSchemas.annotationSchema(fieldName, expressionSchema);
+    Schema annotationsSchema = nestedAnnotationsSchema(annotation.getName(), annotation.getAnnotations());
+    String recordName = fieldName + "-" + annotation.getName();
+    return SapODataSchemas.annotationSchema(recordName, expressionSchema, annotationsSchema);
   }
 
-  // TODO nested annotations
-  private Schema expressionToFieldSchema(String fieldName, CsdlExpression expression) {
+  private @Nullable Schema nestedAnnotationsSchema(String annotationName, Map<String, OData4Annotation> annotations) {
+    if (annotations.isEmpty()) {
+      return null;
+    }
+    List<Schema.Field> fields = annotations.values().stream()
+      .map(annotation -> Schema.Field.of(annotation.getName(), annotationToFieldSchema(annotationName, annotation)))
+      .collect(Collectors.toList());
+
+    return Schema.recordOf(annotationName + "-nested-annotations", fields);
+  }
+
+  private @Nullable Schema expressionToFieldSchema(String fieldName, CsdlExpression expression) {
+    if (expression == null) {
+      return null;
+    }
+
     EdmExpression.EdmExpressionType type = ODataUtil.typeOf(expression);
     String recordName = String.format("%s-%s", fieldName, type);
     switch (type) {
+      case Null:
+        // Null annotations are not included. Olingo V4 client does not parse expression annotations correctly:
+        // https://issues.apache.org/jira/browse/OLINGO-1403
       case Binary:
       case Bool:
       case Date:
@@ -224,7 +247,6 @@ public class SapODataSource extends BatchSource<NullWritable, ODataEntity, Struc
       case Path:
       case AnnotationPath:
       case LabeledElementReference:
-      case Null:
       case NavigationPropertyPath:
       case PropertyPath:
         return SapODataSchemas.singleValueExpressionSchema(fieldName);
@@ -236,6 +258,9 @@ public class SapODataSource extends BatchSource<NullWritable, ODataEntity, Struc
       case Ge:
       case Lt:
       case Le:
+        // Annotations on logical & comparison expressionsare not included.
+        // Olingo V4 client does not parse expression annotations correctly:
+        // https://issues.apache.org/jira/browse/OLINGO-1403
         CsdlLogicalOrComparisonExpression logicalOrComparison = expression.asDynamic().asLogicalOrComparison();
         Schema andLeft = expressionToFieldSchema(fieldName, logicalOrComparison.getLeft());
         Schema andRight = expressionToFieldSchema(fieldName, logicalOrComparison.getRight());
@@ -251,17 +276,22 @@ public class SapODataSource extends BatchSource<NullWritable, ODataEntity, Struc
         Schema value = expressionToFieldSchema(fieldName, not.getLeft());
         return SapODataSchemas.notExpressionSchema(recordName, value);
       case Apply:
+        // Apply annotations are not included. Olingo V4 client does not parse expression annotations correctly:
+        // https://issues.apache.org/jira/browse/OLINGO-1403
         List<Schema.Field> parameterFields = new ArrayList<>();
-        List<CsdlExpression> parameters = expression.asDynamic().asApply().getParameters();
+        CsdlApply apply = expression.asDynamic().asApply();
+        List<CsdlExpression> parameters = apply.getParameters();
         for (int i = 0; i < parameters.size(); i++) {
           CsdlExpression parameter = parameters.get(i);
-          String parameterName = String.format("%d-%s", i, ODataUtil.typeOf(parameter));
-          Schema.Field field = Schema.Field.of(parameterName, expressionToFieldSchema(fieldName, parameter));
+          String parameterName = String.format("%s_%d", ODataUtil.typeOf(parameter), i);
+          Schema.Field field = Schema.Field.of(parameterName, expressionToFieldSchema(parameterName, parameter));
           parameterFields.add(field);
         }
         Schema parametersSchema = Schema.recordOf(fieldName + "-parameters", parameterFields);
         return SapODataSchemas.applyExpressionSchema(fieldName, parametersSchema);
       case Cast:
+        // Cast annotations are not included. Olingo V4 client does not parse expression annotations correctly:
+        // https://issues.apache.org/jira/browse/OLINGO-1403
         Schema expressionSchema = expressionToFieldSchema(fieldName, expression.asDynamic().asCast().getValue());
         return SapODataSchemas.castExpressionSchema(fieldName, expressionSchema);
       case Collection:
@@ -276,16 +306,28 @@ public class SapODataSource extends BatchSource<NullWritable, ODataEntity, Struc
         Schema elseSchema = expressionToFieldSchema(fieldName, csdlIf.getElse());
         return SapODataSchemas.ifExpressionSchema(fieldName, guard, then, elseSchema);
       case IsOf:
+        // IsOf annotations are not included. Olingo V4 client does not parse expression annotations correctly:
+        // https://issues.apache.org/jira/browse/OLINGO-1403
         CsdlIsOf isOf = expression.asDynamic().asIsOf();
         return SapODataSchemas.isOfExpressionSchema(fieldName, expressionToFieldSchema(fieldName, isOf.getValue()));
       case LabeledElement:
+        // LabeledElement annotations are not included.
+        // Olingo V4 client does not parse expression annotations correctly:
+        // https://issues.apache.org/jira/browse/OLINGO-1403
         CsdlLabeledElement labeledElement = expression.asDynamic().asLabeledElement();
         Schema labeledElementSchema = expressionToFieldSchema(fieldName, labeledElement.getValue());
         return SapODataSchemas.labeledElementExpressionSchema(fieldName, labeledElementSchema);
       case Record:
         CsdlRecord record = expression.asDynamic().asRecord();
         Schema propertyValuesSchema = propertyValuesSchema(fieldName, record.getPropertyValues());
-        return SapODataSchemas.recordExpressionSchema(fieldName, propertyValuesSchema);
+        if (record.getAnnotations() == null || record.getAnnotations().isEmpty()) {
+          return SapODataSchemas.recordExpressionSchema(fieldName, propertyValuesSchema, null);
+        }
+        Map<String, OData4Annotation> nestedRecordAnnotations = record.getAnnotations().stream()
+          .map(OData4Annotation::new)
+          .collect(Collectors.toMap(OData4Annotation::getName, Function.identity()));
+        Schema nestedRecordAnnotationsSchema = nestedAnnotationsSchema(recordName , nestedRecordAnnotations);
+        return SapODataSchemas.recordExpressionSchema(fieldName, propertyValuesSchema, nestedRecordAnnotationsSchema);
       case UrlRef:
         CsdlUrlRef urlRef = expression.asDynamic().asUrlRef();
         return SapODataSchemas.urlRefExpressionSchema(fieldName, expressionToFieldSchema(fieldName, urlRef.getValue()));

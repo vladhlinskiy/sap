@@ -204,24 +204,146 @@ public class SapODataConstants {
    */
   public static final String GEO_COLLECTION_MULTI_POLYGONS_FIELD_NAME = "multiPolygons";
 
+  /**
+   * OData 4 metadata annotations mapped to CDAP record with field
+   * "{@value SapODataConstants#ANNOTATION_TERM_FIELD_NAME}" for a term name.
+   */
   public static final String ANNOTATION_TERM_FIELD_NAME = "term";
+
+  /**
+   * OData 4 metadata annotations mapped to CDAP record with field
+   * "{@value SapODataConstants#ANNOTATION_QUALIFIER_FIELD_NAME}" for a qualifier name.
+   */
   public static final String ANNOTATION_QUALIFIER_FIELD_NAME = "qualifier";
+
+  /**
+   * OData 4 metadata annotations mapped to CDAP record with field
+   * "{@value SapODataConstants#ANNOTATION_EXPRESSION_FIELD_NAME}" for an expression record.
+   */
   public static final String ANNOTATION_EXPRESSION_FIELD_NAME = "expression";
+
+  /**
+   * OData 4 metadata annotation expression mapped to CDAP record with field
+   * "{@value SapODataConstants#NESTED_ANNOTATIONS_FIELD_NAME}" for a nested annotation record.
+   */
+  public static final String NESTED_ANNOTATIONS_FIELD_NAME = "annotations";
+
+  /**
+   * OData 4 metadata annotation expression mapped to CDAP record with field
+   * "{@value SapODataConstants#EXPRESSION_NAME_FIELD_NAME}" for an expression name.
+   */
   public static final String EXPRESSION_NAME_FIELD_NAME = "name";
+
+  /**
+   * Some of the OData 4 metadata annotation expression mapped to CDAP record with field
+   * "{@value SapODataConstants#EXPRESSION_VALUE_FIELD_NAME}" for an expression value.
+   * These expressions include:
+   * - Constant expressions
+   * - Path
+   * - AnnotationPath
+   * - LabeledElementReference
+   * - Null
+   * - NavigationPropertyPath
+   * - PropertyPath
+   * - Not
+   * - Cast
+   * - IsOf
+   * - LabeledElement
+   * - UrlRef
+   */
   public static final String EXPRESSION_VALUE_FIELD_NAME = "value";
+
+  /**
+   * OData 4 "Apply" metadata annotation expression mapped to CDAP record with field
+   * "{@value SapODataConstants#EXPRESSION_FUNCTION_FIELD_NAME}" for a function name.
+   */
   public static final String EXPRESSION_FUNCTION_FIELD_NAME = "function";
+
+  /**
+   * OData 4 "Apply" metadata annotation expression mapped to CDAP record with field
+   * "{@value SapODataConstants#EXPRESSION_FUNCTION_FIELD_NAME}" for a parameters record.
+   */
   public static final String EXPRESSION_PARAMETERS_FIELD_NAME = "parameters";
+
+  /**
+   * OData 4 logical & comparison expressions mapped to CDAP record with field
+   * "{@value SapODataConstants#EXPRESSION_LEFT_FIELD_NAME}" for a left expression record.
+   */
   public static final String EXPRESSION_LEFT_FIELD_NAME = "left";
+
+  /**
+   * OData 4 logical & comparison expressions mapped to CDAP record with field
+   * "{@value SapODataConstants#EXPRESSION_RIGHT_FIELD_NAME}" for a right expression record.
+   */
   public static final String EXPRESSION_RIGHT_FIELD_NAME = "right";
+
+  /**
+   * Some of the OData 4 metadata annotation expression mapped to CDAP record with field
+   * "{@value SapODataConstants#EXPRESSION_TYPE_FIELD_NAME}" for a type name.
+   * These expressions include:
+   * - Cast
+   * - IsOf
+   * - Record
+   */
   public static final String EXPRESSION_TYPE_FIELD_NAME = "type";
+
+  /**
+   * OData 4 "Cast" and "IsOf" expressions mapped to CDAP record with field
+   * "{@value SapODataConstants#EXPRESSION_MAX_LENGTH_FIELD_NAME}" for a maximum length of value.
+   */
   public static final String EXPRESSION_MAX_LENGTH_FIELD_NAME = "maxLength";
+
+  /**
+   * OData 4 "Cast" and "IsOf" expressions mapped to CDAP record with field
+   * "{@value SapODataConstants#EXPRESSION_PRECISION_FIELD_NAME}" for a precision of value.
+   */
   public static final String EXPRESSION_PRECISION_FIELD_NAME = "precision";
+
+  /**
+   * OData 4 "Cast" and "IsOf" expressions mapped to CDAP record with field
+   * "{@value SapODataConstants#EXPRESSION_SCALE_FIELD_NAME}" for a scale of value.
+   */
   public static final String EXPRESSION_SCALE_FIELD_NAME = "scale";
+
+  /**
+   * OData 4 "Cast" and "IsOf" expressions mapped to CDAP record with field
+   * "{@value SapODataConstants#EXPRESSION_SRID_FIELD_NAME}" for a SRID of value.
+   */
   public static final String EXPRESSION_SRID_FIELD_NAME = "srid";
+
+  /**
+   * OData 4 "Collection" expression mapped to CDAP record with field
+   * "{@value SapODataConstants#EXPRESSION_ITEMS_FIELD_NAME}" for an array of item expressions.
+   */
   public static final String EXPRESSION_ITEMS_FIELD_NAME = "items";
+
+  /**
+   * OData 4 "If" expression mapped to CDAP record with field
+   * "{@value SapODataConstants#EXPRESSION_GUARD_FIELD_NAME}" for a guard expression.
+   */
   public static final String EXPRESSION_GUARD_FIELD_NAME = "guard";
+
+  /**
+   * OData 4 "If" expression mapped to CDAP record with field
+   * "{@value SapODataConstants#EXPRESSION_THEN_FIELD_NAME}" for a then expression.
+   */
   public static final String EXPRESSION_THEN_FIELD_NAME = "then";
+
+  /**
+   * OData 4 "If" expression mapped to CDAP record with field
+   * "{@value SapODataConstants#EXPRESSION_ELSE_FIELD_NAME}" for an else expression.
+   */
   public static final String EXPRESSION_ELSE_FIELD_NAME = "else";
+
+  /**
+   * OData 4 "LabeledElement" expression mapped to CDAP record with field
+   * "{@value SapODataConstants#EXPRESSION_ELEMENT_NAME_FIELD_NAME}" for an element name.
+   */
   public static final String EXPRESSION_ELEMENT_NAME_FIELD_NAME = "elementName";
+
+  /**
+   * OData 4 "Record" expression mapped to CDAP record with field
+   * "{@value SapODataConstants#EXPRESSION_PROPERTY_VALUES_FIELD_NAME}" for a record of property values.
+   */
   public static final String EXPRESSION_PROPERTY_VALUES_FIELD_NAME = "propertyValues";
 }
