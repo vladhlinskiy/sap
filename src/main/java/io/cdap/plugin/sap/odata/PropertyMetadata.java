@@ -16,7 +16,7 @@
 
 package io.cdap.plugin.sap.odata;
 
-import java.util.Map;
+import java.util.List;
 
 /**
  * OData property metadata.
@@ -28,10 +28,10 @@ public class PropertyMetadata {
   private final boolean nullable;
   private final Integer precision;
   private final Integer scale;
-  private final Map<String, String> annotations;
+  private final List<ODataAnnotation> annotations;
 
   public PropertyMetadata(String name, String edmTypeName, boolean nullable, Integer precision, Integer scale,
-                          Map<String, String> annotations) {
+                          List<ODataAnnotation> annotations) {
     this.name = name;
     this.edmTypeName = edmTypeName;
     this.nullable = nullable;
@@ -60,7 +60,7 @@ public class PropertyMetadata {
     return scale;
   }
 
-  public Map<String, String> getAnnotations() {
+  public List<ODataAnnotation> getAnnotations() {
     return annotations;
   }
 }
