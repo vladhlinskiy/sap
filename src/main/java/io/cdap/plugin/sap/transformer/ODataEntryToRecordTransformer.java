@@ -47,6 +47,7 @@ import java.util.Calendar;
 import java.util.GregorianCalendar;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
@@ -151,15 +152,29 @@ public class ODataEntryToRecordTransformer {
         }
         return value.toString();
       case RECORD:
-        ensureTypeValid(fieldName, value, Geospatial.class, StreamProperty.class);
+        ensureTypeValid(fieldName, value, Geospatial.class, StreamProperty.class, Map.class);
         if (value instanceof StreamProperty) {
           return extractStream((StreamProperty) value, schema);
         }
+        if (value instanceof Map) {
+          return extractComplexValue((Map<String, Object>) value, schema);
+        }
         return extractGeospatial(fieldName, (Geospatial) value, schema);
+      case ARRAY:
+        ensureTypeValid(fieldName, value, List.class);
+        Schema componentSchema = schema.getComponentSchema().isNullable() ? schema.getComponentSchema().getNonNullable()
+          : schema.getComponentSchema();
+        return extractCollection(fieldName, (List<Object>) value, componentSchema);
       default:
         throw new UnexpectedFormatException(String.format("Field '%s' is of unsupported type '%s'", fieldName,
                                                           fieldType.name().toLowerCase()));
     }
+  }
+
+  private List<Object> extractCollection(String fieldName, List<Object> collection, Schema componentSchema) {
+    return collection.stream()
+      .map(item -> extractValue(fieldName, item, componentSchema))
+      .collect(Collectors.toList());
   }
 
   private StructuredRecord extractStream(StreamProperty streamProperty, Schema schema) {
@@ -169,6 +184,18 @@ public class ODataEntryToRecordTransformer {
       .set(SapODataConstants.STREAM_READ_LINK_FIELD_NAME, streamProperty.getMediaReadLink())
       .set(SapODataConstants.STREAM_EDIT_LINK_FIELD_NAME, streamProperty.getMediaEditLink())
       .build();
+  }
+
+  private StructuredRecord extractComplexValue(Map<String, Object> complexValue, Schema schema) {
+    StructuredRecord.Builder builder = StructuredRecord.builder(schema);
+    complexValue.entrySet().forEach(e -> {
+      String fieldName = e.getKey();
+      Schema.Field field = schema.getField(fieldName);
+      Schema fieldSchema = field.getSchema().isNullable() ? field.getSchema().getNonNullable() : field.getSchema();
+      Object extractedValue = extractValue(fieldName, e.getValue(), fieldSchema);
+      builder.set(fieldName, extractedValue);
+    });
+    return builder.build();
   }
 
   private StructuredRecord extractGeospatial(String fieldName, Geospatial geospatial, Schema schema) {
